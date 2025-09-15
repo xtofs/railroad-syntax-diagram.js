@@ -391,8 +391,7 @@
                 .attr("patternUnits", "userSpaceOnUse");
 
             // Cross size (small lines extending from center)
-            // const crossSize = 4; // 4 pixels in each direction from center
-            const crossSize = this.gridSize;
+            const crossSize = 4; // 4 pixels in each direction from center            
             // Place cross at the center of the pattern tile
             const centerX = this.gridSize / 2;
             const centerY = this.gridSize / 2;
@@ -404,8 +403,7 @@
                 .attr("x2", centerX + crossSize)
                 .attr("y2", centerY)
                 .attr("stroke", "#ddd")
-                .attr("stroke-width", ".2")
-                .attr("opacity", "0.6");
+                .attr("stroke-width", ".2");
 
             // Add vertical line of cross
             pattern.append("line")
@@ -414,8 +412,7 @@
                 .attr("x2", centerX)
                 .attr("y2", centerY + crossSize)
                 .attr("stroke", "#ddd")
-                .attr("stroke-width", ".2")
-                .attr("opacity", "0.6");
+                .attr("stroke-width", ".2");
 
             // Create background rectangle with pattern fill (will be sized later)
             const gridGroup = this.svg.insert("g", ":first-child")
