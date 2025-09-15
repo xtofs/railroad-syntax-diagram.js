@@ -378,29 +378,53 @@
                 defs = this.svg.append("defs");
             }
 
-            // Create grid pattern
+            // Remove any existing pattern
+            defs.select("#grid-pattern").remove();
+
+            // Create grid pattern with small crosses at grid points
             const pattern = defs.append("pattern")
                 .attr("id", "grid-pattern")
+                .attr("x", -this.gridSize / 2) // Offset pattern by half grid size
+                .attr("y", -this.gridSize / 2) // Offset pattern by half grid size
                 .attr("width", this.gridSize)
                 .attr("height", this.gridSize)
                 .attr("patternUnits", "userSpaceOnUse");
 
-            // Add vertical and horizontal lines to pattern
-            pattern.append("path")
-                .attr("d", `M ${this.gridSize} 0 L 0 0 0 ${this.gridSize}`)
-                .attr("fill", "none")
+            // Cross size (small lines extending from center)
+            // const crossSize = 4; // 4 pixels in each direction from center
+            const crossSize = this.gridSize;
+            // Place cross at the center of the pattern tile
+            const centerX = this.gridSize / 2;
+            const centerY = this.gridSize / 2;
+            
+            // Add horizontal line of cross
+            pattern.append("line")
+                .attr("x1", centerX - crossSize)
+                .attr("y1", centerY)
+                .attr("x2", centerX + crossSize)
+                .attr("y2", centerY)
                 .attr("stroke", "#ddd")
-                .attr("stroke-width", "1")
-                .attr("opacity", "0.5");
+                .attr("stroke-width", ".2")
+                .attr("opacity", "0.6");
+
+            // Add vertical line of cross
+            pattern.append("line")
+                .attr("x1", centerX)
+                .attr("y1", centerY - crossSize)
+                .attr("x2", centerX)
+                .attr("y2", centerY + crossSize)
+                .attr("stroke", "#ddd")
+                .attr("stroke-width", ".2")
+                .attr("opacity", "0.6");
 
             // Create background rectangle with pattern fill (will be sized later)
-            const gridGroup = this.svg.append("g")
+            const gridGroup = this.svg.insert("g", ":first-child")
                 .attr("class", "background-grid");
 
             gridGroup.append("rect")
                 .attr("id", "grid-background")
-                .attr("x", 0)
-                .attr("y", 0)
+                .attr("x", 0) // No offset needed on rect - pattern handles it
+                .attr("y", 0) // No offset needed on rect - pattern handles it
                 .attr("width", 0) // Will be updated when dimensions are known
                 .attr("height", 0) // Will be updated when dimensions are known
                 .attr("fill", "url(#grid-pattern)");
@@ -410,6 +434,7 @@
             const svgWidth = parseInt(this.svg.attr("width"));
             const svgHeight = parseInt(this.svg.attr("height")) || 600;
 
+            // Update the background rectangle size to cover the full SVG area
             this.svg.select("#grid-background")
                 .attr("width", svgWidth)
                 .attr("height", svgHeight);
@@ -744,11 +769,7 @@
 
             // Evaluate the expression code in context with our functions
             const expression = eval(`(function() {
-                const textBox = Expression.textBox;
-                const sequence = Expression.sequence;
-                const stack = Expression.stack;
-                const bypass = Expression.bypass;
-                const loop = Expression.loop;
+                const { textBox, sequence, stack, bypass, loop } = Expression;
                 return ${expressionCode};
             })()`);
             diagram.addRule(ruleName, expression);
