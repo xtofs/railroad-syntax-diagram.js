@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Diagram Demo</title>
+    <link rel="stylesheet" href="diagram.css">
+    
+    <!-- D3.js dependency -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Railroad Diagram Library -->
+    <script src="diagram.js"></script>
+</head>
+
+<body>
+    <h1>Railroad Diagram Examples</h1>
+    <p>Examples based on the <a href="https://en.wikipedia.org/wiki/Syntax_diagram">Wikipedia syntax diagram</a> grammar:</p>
+
+    <div class="syntax-rule">
+        <h2>expression</h2>
+        <p><code>expression = term ["+" expression]</code></p>
+        <script type="text/railroad" data-rule="expression">
+            sequence(
+                textBox("term", "identifier"),
+                bypass(sequence(
+                    textBox("\"+\"", "operator"),
+                    textBox("expression", "identifier")
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule">
+        <h2>term</h2>
+        <p><code>term = factor ["*" term]</code></p>
+        <script type="text/railroad" data-rule="term">
+            sequence(
+                textBox("factor", "identifier"),
+                bypass(sequence(
+                    textBox("*", "operator"),
+                    textBox("term", "identifier")
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule">
+        <h2>factor</h2>
+        <p><code>factor = constant / variable / "(" expression ")"</code></p>
+        <script type="text/railroad" data-rule="factor">
+            stack(
+                textBox("constant", "identifier"),
+                textBox("variable", "identifier"),
+                sequence(
+                    textBox("(", "operator"),
+                    textBox("expression", "identifier"),
+                    textBox(")", "operator")
+                )
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule">
+        <h2>variable</h2>
+        <p><code>variable = "x" / "y" / "z"</code></p>
+        <script type="text/railroad" data-rule="variable">
+            stack(
+                textBox("x", "keyword"),
+                textBox("y", "keyword"),
+                textBox("z", "keyword")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule">
+        <h2>constant</h2>
+        <p><code>constant = 1*digit</code></p>
+        <script type="text/railroad" data-rule="constant">
+            loop(textBox("digit", "identifier"))
+        </script>
+    </div>
+
+    <div class="syntax-rule">
+        <h2>digit</h2>
+        <p><code>digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"</code></p>
+        <script type="text/railroad" data-rule="digit">
+            stack(
+                textBox("0", "keyword"),
+                textBox("1", "keyword"),
+                textBox("2", "keyword"),
+                textBox("3", "keyword"),
+                textBox("4", "keyword"),
+                textBox("5", "keyword"),
+                textBox("6", "keyword"),
+                textBox("7", "keyword"),
+                textBox("8", "keyword"),
+                textBox("9", "keyword")
+            )
+        </script>
+    </div>
+
+    <script>
+        // Automatically discover and render all diagram script tags when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            window.RailroadDiagrams.renderDiagramScripts({ gridSize: 22, debugMode: true });
+        });
+    </script>
+</body>
+
+</html>

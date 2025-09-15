@@ -1,0 +1,145 @@
+
+
+/* Rail track styling for connections */
+.rail-track {
+    fill: none; /* Prevent filling of the path */
+    stroke: #000;
+    stroke-width: 8;
+    stroke-linecap: butt; /* End exactly at coordinates, don't extend beyond */
+}
+
+/* Terminal styling for start/end points */
+.start-terminal,
+.end-terminal {
+    fill: black;
+    stroke: none;
+}
+
+.highlight {
+    stroke: red;
+}
+
+/* Rails styling */
+.rail {
+    fill: none;
+    stroke: #333;
+    stroke-width: 2;
+}
+
+.rail.branch {
+    stroke: #666;
+    stroke-width: 1.5;
+}
+
+.rail.loop {
+    stroke: #888;
+    stroke-width: 1.5;
+    stroke-dasharray: 3,3;
+}
+
+.terminal {
+    fill: rgb(200, 200, 200);
+}   
+.nonterminal {
+    fill: rgb(210, 210, 210);       
+}
+
+.nonterminal.textbox-text {
+    text-decoration: underline;
+}
+
+.textbox {
+    stroke-width: 4px;
+    stroke: black;
+    fill: none; /* No fill by default - let class specificity handle it */
+}
+
+.textbox.terminal {
+    fill: rgb(200, 200, 200);
+}
+
+.textbox.nonterminal {
+    fill: rgb(210, 210, 210);
+}
+
+.textbox-text {
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    fill: black;
+    text-anchor: "middle";    
+    dominant-baseline: "middle";
+    alignment-baseline: "middle";
+}
+
+/* CSS-based debug visualization using HTML overlays */
+.debug-overlay {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+}
+
+.debug-box-overlay {
+    position: absolute !important;
+    border: 1px dotted hotpink !important;    
+    box-sizing: border-box !important;
+    pointer-events: none !important;
+}
+
+.debug-baseline-overlay {
+    position: absolute !important;
+    border-top: 1px dashed hotpink !important;
+    pointer-events: none !important;
+}
+
+/* Ensure container has relative positioning for debug overlay */
+.diagram-container {
+    position: relative;
+    margin-top: 1rem;
+}
+
+/* Fallback: Old SVG-based debug styles (in case CSS approach doesn't work) */
+.debug-box {
+    stroke: hotpink;    
+    stroke-width: 1px;
+    stroke-dasharray:6 4;
+    fill: none;
+}
+
+.debug-baseline {
+    stroke: hotpink;    
+    stroke-width: 1px;
+    stroke-dasharray: 1 1;
+    fill: none;
+}
+
+/* New syntax rule layout styles */
+.syntax-rule {
+    margin: 2rem 0;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fafafa;
+}
+
+.syntax-rule h2 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+script[type="text/railroad"] {
+    display: none;
+}
+
+.error {
+    color: red;
+    font-weight: bold;
+    padding: 1rem;
+    background-color: #ffe6e6;
+    border: 1px solid red;
+    border-radius: 4px;
+}
