@@ -480,8 +480,6 @@
             // INVARIANT: Ensure total width is even for perfect centering in stacks (Grid Alignment Invariant)
             const adjustedWidth = roundUpToEven(width);
 
-            // console.log(`textBox "${textContent}": width=${adjustedWidth}, height=${height}, baselineY=1`);
-
             return {
                 width: adjustedWidth,
                 height: height,
@@ -541,8 +539,6 @@
                         // Calculate child Y position to align baselines (in relative coordinates)
                         const childY = baselineY - child.baselineY;
 
-                        // console.log(`sequence child ${index}: width=${child.width}, baselineY=${child.baselineY}, positioning at (${currentX}, ${childY})`);
-
                         // Call renderChild with child and relative coordinates
                         renderChild(child, currentX, childY);
 
@@ -550,8 +546,6 @@
                         if (index < children.length - 1) {
                             const railStartX = currentX + child.width;
                             const railY = baselineY;
-
-                            // console.log(`sequence: adding rail from ${railStartX} to ${railStartX + 2}`);
 
                             trackBuilder
                                 .start(railStartX, railY, Direction.EAST)
@@ -783,12 +777,10 @@
 
         function doRender() {
             const scriptTags = document.querySelectorAll('script[type="text/railroad"]');
-            // console.log(`Found ${scriptTags.length} diagram script tags`);
 
             scriptTags.forEach((scriptTag, index) => {
                 const ruleName = scriptTag.dataset.rule;
                 const expressionCode = scriptTag.textContent.trim();
-                // console.log(`Processing rule: ${ruleName}, code: ${expressionCode}`);
 
                 // Create container for this diagram
                 const container = document.createElement('div');
