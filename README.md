@@ -2,7 +2,7 @@
 
 A JavaScript library for generating [railroad syntax diagrams](https://en.wikipedia.org/wiki/Syntax_diagram) with clean SVG output and professional styling.
 
-![Railroad Diagram Example](https://raw.githubusercontent.com/xtofs/railroad-diagram.js/main/example-diagram.png)
+![Railroad Diagram Example](example-diagram.png)
 
 ## Quick Start
 
