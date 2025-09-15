@@ -6,7 +6,7 @@ A JavaScript library for generating [railroad syntax diagrams](https://en.wikipe
 
 ## Quick Start
 
-The library uses a standalone global API that works with file:// protocol - no local server required!
+The library uses a standalone global API that works with http:// and file:// protocol.
 
 ```html
 <!DOCTYPE html>
@@ -14,36 +14,6 @@ The library uses a standalone global API that works with file:// protocol - no l
 <head>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="diagram.js"></script>
-    <link rel="stylesheet" href="diagram.css">
-</head>
-<body>
-    <!-- Define diagrams using script tags -->
-    <script type="text/railroad" data-rule="sql-select">
-        sequence(
-            textBox("SELECT", "keyword"),
-            stack(
-                textBox("*", "operator"),
-                textBox("column_name", "identifier")
-            ),
-            textBox("FROM", "keyword"),
-            textBox("table_name", "identifier")
-        )
-    </script>
-
-    <script>
-        // Render diagrams when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            window.RailroadDiagrams.renderDiagramScripts();
-        });
-    </script>
-</body>
-</html>
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="diagram-standalone.js"></script>
     <link rel="stylesheet" href="diagram.css">
 </head>
 <body>
