@@ -22,10 +22,10 @@
         <p><code>expression = term ["+" expression]</code></p>
         <script type="text/railroad" data-rule="expression">
             sequence(
-                textBox("term", "identifier"),
+                textBox("term", "nonterminal"),
                 bypass(sequence(
-                    textBox("\"+\"", "operator"),
-                    textBox("expression", "identifier")
+                    textBox("\"+\"", "terminal"),
+                    textBox("expression", "nonterminal")
                 ))
             )
         </script>
@@ -36,10 +36,10 @@
         <p><code>term = factor ["*" term]</code></p>
         <script type="text/railroad" data-rule="term">
             sequence(
-                textBox("factor", "identifier"),
+                textBox("factor", "nonterminal"),
                 bypass(sequence(
-                    textBox("*", "operator"),
-                    textBox("term", "identifier")
+                    textBox("*", "terminal"),
+                    textBox("term", "nonterminal")
                 ))
             )
         </script>
@@ -50,12 +50,12 @@
         <p><code>factor = constant / variable / "(" expression ")"</code></p>
         <script type="text/railroad" data-rule="factor">
             stack(
-                textBox("constant", "identifier"),
-                textBox("variable", "identifier"),
+                textBox("constant", "nonterminal"),
+                textBox("variable", "nonterminal"),
                 sequence(
-                    textBox("(", "operator"),
-                    textBox("expression", "identifier"),
-                    textBox(")", "operator")
+                    textBox("(", "terminal"),
+                    textBox("expression", "nonterminal"),
+                    textBox(")", "terminal")
                 )
             )
         </script>
@@ -66,9 +66,9 @@
         <p><code>variable = "x" / "y" / "z"</code></p>
         <script type="text/railroad" data-rule="variable">
             stack(
-                textBox("x", "keyword"),
-                textBox("y", "keyword"),
-                textBox("z", "keyword")
+                textBox("x", "terminal"),
+                textBox("y", "terminal"),
+                textBox("z", "terminal")
             )
         </script>
     </div>
@@ -77,7 +77,7 @@
         <h2>constant</h2>
         <p><code>constant = 1*digit</code></p>
         <script type="text/railroad" data-rule="constant">
-            loop(textBox("digit", "identifier"))
+            loop(textBox("digit", "nonterminal"))
         </script>
     </div>
 
@@ -86,16 +86,16 @@
         <p><code>digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"</code></p>
         <script type="text/railroad" data-rule="digit">
             stack(
-                textBox("0", "keyword"),
-                textBox("1", "keyword"),
-                textBox("2", "keyword"),
-                textBox("3", "keyword"),
-                textBox("4", "keyword"),
-                textBox("5", "keyword"),
-                textBox("6", "keyword"),
-                textBox("7", "keyword"),
-                textBox("8", "keyword"),
-                textBox("9", "keyword")
+                textBox("0", "terminal"),
+                textBox("1", "terminal"),
+                textBox("2", "terminal"),
+                textBox("3", "terminal"),
+                textBox("4", "terminal"),
+                textBox("5", "terminal"),
+                textBox("6", "terminal"),
+                textBox("7", "terminal"),
+                textBox("8", "terminal"),
+                textBox("9", "terminal")
             )
         </script>
     </div>

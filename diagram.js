@@ -540,6 +540,11 @@
                         .attr("class", `textbox-text ${className}`)
                         .text(textContent);
 
+                    // Add data attribute for nonterminals to enable click navigation
+                    if (className === 'nonterminal') {
+                        text.attr("data-rule", textContent);
+                    }
+
                 }
             };
         }
@@ -832,6 +837,44 @@
         } else {
             doRender();
         }
+    }
+
+    // Click handler for nonterminal navigation
+    function setupClickHandlers() {
+        // Use event delegation to handle clicks on nonterminal text elements
+        document.addEventListener('click', function(event) {
+            // Check if clicked element is a nonterminal text
+            if (event.target.classList.contains('textbox-text') && 
+                event.target.classList.contains('nonterminal') &&
+                event.target.hasAttribute('data-rule')) {
+                
+                const ruleName = event.target.getAttribute('data-rule');
+                const targetElement = document.getElementById(ruleName) || 
+                                    document.querySelector(`[data-rule="${ruleName}"]`) ||
+                                    document.querySelector(`h2:contains("${ruleName}")`);
+                
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // Try to find by heading text content
+                    const headings = document.querySelectorAll('h2');
+                    for (const heading of headings) {
+                        if (heading.textContent.trim() === ruleName) {
+                            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            return;
+                        }
+                    }
+                    console.warn(`No rule found for: ${ruleName}`);
+                }
+            }
+        });
+    }
+
+    // Set up click handlers when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupClickHandlers);
+    } else {
+        setupClickHandlers();
     }
 
     // Expose to global scope

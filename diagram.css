@@ -1,5 +1,4 @@
 
-
 /* Rail track styling for connections */
 .rail-track {
     fill: none; /* Prevent filling of the path */
@@ -37,21 +36,11 @@
     stroke-dasharray: 3,3;
 }
 
-.terminal {
-    fill: rgb(200, 200, 200);
-}   
-.nonterminal {
-    fill: rgb(210, 210, 210);       
-}
-
-.nonterminal.textbox-text {
-    text-decoration: underline;
-}
-
+/* Terminal and non-terminal text box styling */
 .textbox {
     stroke-width: 4px;
     stroke: black;
-    fill: none; /* No fill by default - let class specificity handle it */
+    fill: none;
 }
 
 .textbox.terminal {
@@ -69,6 +58,16 @@
     text-anchor: "middle";    
     dominant-baseline: "middle";
     alignment-baseline: "middle";
+}
+
+.textbox-text.nonterminal {
+    text-decoration: underline; /* Underline non-terminals */
+    cursor: pointer; /* Show it's clickable */
+    pointer-events: auto; /* Ensure text can receive click events */
+}
+
+.textbox-text.nonterminal:hover {
+    fill: #0066cc; /* Blue on hover */
 }
 
 /* CSS-based debug visualization using HTML overlays */
