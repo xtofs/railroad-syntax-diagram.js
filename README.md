@@ -8,25 +8,25 @@ A JavaScript library for generating [railroad syntax diagrams](https://en.wikipe
 
 The library uses a standalone global API that works with file:// protocol - no local server required!
 
+### CDN Usage (Recommended)
+
 ```html
 <!DOCTYPE html>
 <html>
 <head>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="diagram.js"></script>
-    <link rel="stylesheet" href="diagram.css">
+    <script src="https://cdn.jsdelivr.net/gh/xtofs/railroad-syntax-diagram.js@0.0.1/diagram.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/xtofs/railroad-syntax-diagram.js@0.0.1/diagram.css">
 </head>
 <body>
     <!-- Define diagrams using script tags -->
-    <script type="text/railroad" data-rule="sql-select">
+    <script type="text/railroad" data-rule="expression">
         sequence(
-            textBox("SELECT", "keyword"),
-            stack(
-                textBox("*", "operator"),
-                textBox("column_name", "identifier")
-            ),
-            textBox("FROM", "keyword"),
-            textBox("table_name", "identifier")
+            textBox("term", "nonterminal"),
+            bypass(sequence(
+                textBox("\"+\"", "terminal"),
+                textBox("expression", "nonterminal")
+            ))
         )
     </script>
 
@@ -38,16 +38,45 @@ The library uses a standalone global API that works with file:// protocol - no l
     </script>
 </body>
 </html>
+```
+
+### Local Development
+
 ```html
 <!DOCTYPE html>
 <html>
 <head>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="diagram-standalone.js"></script>
+    <script src="diagram.js"></script>
     <link rel="stylesheet" href="diagram.css">
 </head>
 <body>
     <!-- Define diagrams using script tags -->
+    <script type="text/railroad" data-rule="expression">
+        sequence(
+            textBox("term", "nonterminal"),
+            bypass(sequence(
+                textBox("\"+\"", "terminal"),
+                textBox("expression", "nonterminal")
+            ))
+        )
+    </script>
+
+    <script>
+        // Render diagrams when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            window.RailroadDiagrams.renderDiagramScripts();
+        });
+    </script>
+</body>
+</html>
+```
+
+### CDN Versioning
+
+- **Latest stable**: `@0.0.1` (recommended for production)
+- **Development**: `@main` (latest commit, may break)
+- **Specific commit**: `@commit-hash` (ultimate stability)
     <script type="text/railroad" data-rule="sql-select">
         sequence(
             textBox("SELECT", "keyword"),
@@ -102,7 +131,13 @@ const { TrackBuilder, Diagram } = window.RailroadDiagrams;
 ### CSS Classes
 
 - `terminal`: Light gray styling for literal text and keywords
-- `nonterminal`: Darker gray styling with underlined text for rule references
+- `nonterminal`: Darker gray styling with underlined text for rule references (clickable)
+
+### Interactive Features
+
+- **Click Navigation**: Click on any nonterminal (underlined text) to jump to its rule definition
+- **Hover Effects**: Nonterminals show visual feedback on hover
+- **Instant Scrolling**: Navigation uses instant scrolling (not animated)
 
 ## Usage Example
 
