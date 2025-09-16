@@ -854,13 +854,13 @@
                                     document.querySelector(`h2:contains("${ruleName}")`);
                 
                 if (targetElement) {
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    targetElement.scrollIntoView({ behavior: 'auto', block: 'start' });
                 } else {
                     // Try to find by heading text content
                     const headings = document.querySelectorAll('h2');
                     for (const heading of headings) {
                         if (heading.textContent.trim() === ruleName) {
-                            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            heading.scrollIntoView({ behavior: 'auto', block: 'start' });
                             return;
                         }
                     }
