@@ -3,7 +3,7 @@
 .rail-track {
     fill: none; /* Prevent filling of the path */
     stroke: #000;
-    stroke-width: 8;
+    stroke-width: 6;
     stroke-linecap: butt; /* End exactly at coordinates, don't extend beyond */
 }
 
@@ -18,27 +18,9 @@
     stroke: red;
 }
 
-/* Rails styling */
-.rail {
-    fill: none;
-    stroke: #333;
-    stroke-width: 2;
-}
-
-.rail.branch {
-    stroke: #666;
-    stroke-width: 1.5;
-}
-
-.rail.loop {
-    stroke: #888;
-    stroke-width: 1.5;
-    stroke-dasharray: 3,3;
-}
-
 /* Terminal and non-terminal text box styling */
 .textbox {
-    stroke-width: 4px;
+    stroke-width: 3px;
     stroke: black;
     fill: none;
 }
@@ -53,7 +35,7 @@
 
 .textbox-text {
     font-family: Arial, sans-serif;
-    font-size: 24px;
+    font-size: 14px;
     fill: black;
     text-anchor: "middle";    
     dominant-baseline: "middle";

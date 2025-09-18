@@ -15,7 +15,7 @@ The library uses a standalone global API that works with file:// protocol - no l
 <html>
 <head>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/xtofs/railroad-syntax-diagram.js@0.0.1/diagram.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/xtofs/railroad-syntax-diagram.js@0.0.1/diagram.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/xtofs/railroad-syntax-diagram.js@0.0.1/diagram.css">
 </head>
 <body>
@@ -138,6 +138,35 @@ const { TrackBuilder, Diagram } = window.RailroadDiagrams;
 - **Click Navigation**: Click on any nonterminal (underlined text) to jump to its rule definition
 - **Hover Effects**: Nonterminals show visual feedback on hover
 - **Instant Scrolling**: Navigation uses instant scrolling (not animated)
+
+### Sizing Configuration
+
+The library uses coordinated sizing parameters for optimal appearance. Here are recommended combinations:
+
+| Size            | Grid Size | Font Size | Rail Tracks | Text Borders | Use Case                             |
+|-----------------|-----------|-----------|-------------|--------------|--------------------------------------|
+| **Compact**     | 12px      | 10px      | 4px         | 2px          | Dense documentation, small spaces    |
+| **Small**       | 14px      | 12px      | 5px         | 2px          | Technical docs, inline diagrams      |
+| **Medium**      | 16px      | 14px      | 6px         | 3px          | **Default** - balanced for web pages |
+| **Large**       | 20px      | 16px      | 7px         | 3px          | Presentations, better readability    |
+| **Extra Large** | 24px      | 18px      | 8px         | 4px          | Posters, large displays              |
+
+**Configuration:**
+
+```javascript
+// In your HTML script tag:
+window.RailroadDiagrams.renderDiagramScripts({ 
+    gridSize: 16,  // Choose from table above
+    debugMode: false 
+});
+```
+
+```css
+/* In your CSS or diagram.css: */
+.textbox-text { font-size: 14px; }      /* Text inside boxes */
+.rail-track { stroke-width: 6; }        /* All connecting rails */
+.textbox { stroke-width: 3px; }         /* Borders around text boxes */
+```
 
 ## Usage Example
 
