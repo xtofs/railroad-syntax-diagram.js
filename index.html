@@ -17,7 +17,7 @@
     <h1>Railroad Diagram Examples</h1>
     <p>Examples based on the <a href="https://en.wikipedia.org/wiki/Syntax_diagram">Wikipedia syntax diagram</a> grammar:</p>
 
-    <div class="syntax-rule">
+    <div class="syntax-rule" id="syntax-rule-expression">
         <h2>expression</h2>
         <p><code>expression = term ["+" expression]</code></p>
         <script type="text/railroad" data-rule="expression">
@@ -31,7 +31,7 @@
         </script>
     </div>
 
-    <div class="syntax-rule">
+    <div class="syntax-rule" id="syntax-rule-term">
         <h2>term</h2>
         <p><code>term = factor ["*" term]</code></p>
         <script type="text/railroad" data-rule="term">
@@ -45,7 +45,7 @@
         </script>
     </div>
 
-    <div class="syntax-rule">
+    <div class="syntax-rule" id="syntax-rule-factor">
         <h2>factor</h2>
         <p><code>factor = constant / variable / "(" expression ")"</code></p>
         <script type="text/railroad" data-rule="factor">
@@ -61,7 +61,7 @@
         </script>
     </div>
 
-    <div class="syntax-rule">
+    <div class="syntax-rule" id="syntax-rule-variable">
         <h2>variable</h2>
         <p><code>variable = "x" / "y" / "z"</code></p>
         <script type="text/railroad" data-rule="variable">
@@ -73,7 +73,7 @@
         </script>
     </div>
 
-    <div class="syntax-rule">
+    <div class="syntax-rule" id="syntax-rule-constant">
         <h2>constant</h2>
         <p><code>constant = 1*digit</code></p>
         <script type="text/railroad" data-rule="constant">
@@ -81,7 +81,7 @@
         </script>
     </div>
 
-    <div class="syntax-rule">
+    <div class="syntax-rule" id="syntax-rule-digit">
         <h2>digit</h2>
         <p><code>digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"</code></p>
         <script type="text/railroad" data-rule="digit">

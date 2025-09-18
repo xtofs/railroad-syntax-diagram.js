@@ -138,8 +138,27 @@ const { TrackBuilder, Diagram } = window.RailroadDiagrams;
 ### Interactive Features
 
 - **Click Navigation**: Click on any nonterminal (underlined text) to jump to its rule definition
+- **Anchor-based Navigation**: Nonterminals navigate to elements with `id="syntax-rule-${ruleName}"`
 - **Hover Effects**: Nonterminals show visual feedback on hover
 - **Instant Scrolling**: Navigation uses instant scrolling (not animated)
+
+```html
+<!-- Clicking "expression" nonterminals will jump to this div -->
+<div class="syntax-rule" id="syntax-rule-expression">
+    <h2>expression</h2>
+    <script type="text/railroad" data-rule="expression">
+        sequence(textBox("term", "nonterminal"), /* ... */)
+    </script>
+</div>
+
+<!-- Clicking "term" nonterminals will jump to this div -->
+<div class="syntax-rule" id="syntax-rule-term">
+    <h2>term</h2>
+    <script type="text/railroad" data-rule="term">
+        sequence(textBox("factor", "nonterminal"), /* ... */)
+    </script>
+</div>
+```
 
 ### Debug Features
 

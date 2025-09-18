@@ -501,7 +501,7 @@
         
         static textBox(textContent, className) {
             const height = 2;
-            const gridSize = 24; // Default grid size
+            const gridSize = getGridSizeFromCSS(); // Use actual grid size from CSS
             const textWidth = Expression._measureText(textContent, gridSize, className);
             const width = textWidth + 3; // Add 1 unit on each side for rails, plus 1 for original padding
             // INVARIANT: Ensure total width is even for perfect centering in stacks (Grid Alignment Invariant)
@@ -527,11 +527,20 @@
 
                     // Add the rectangle for the text-box (offset by 1 unit from left) - coordinates in pixels
                     const textboxWidth = adjustedWidth - 2; // Full width minus the 2 rail units (1 left + 1 right)
+                    
+                    // Get corner radius from CSS custom properties
+                    const rootStyle = getComputedStyle(document.documentElement);
+                    const radiusProperty = className === 'nonterminal' 
+                        ? '--rail-nonterminal-radius' 
+                        : '--rail-terminal-radius';
+                    const radiusStr = rootStyle.getPropertyValue(radiusProperty).trim();
+                    const cornerRadius = parseInt(radiusStr) || (trackBuilder.gridSize * (className === 'nonterminal' ? 0.6 : 0.9));
+                    
                     const rect = group.append("rect")
                         .attr("x", 1 * trackBuilder.gridSize)
                         .attr("y", 0)
-                        .attr("rx", trackBuilder.gridSize * .9)
-                        .attr("ry", trackBuilder.gridSize * .9)
+                        .attr("rx", cornerRadius)
+                        .attr("ry", cornerRadius)
                         .attr("width", textboxWidth * trackBuilder.gridSize) // Use calculated text-box width
                         .attr("height", height * trackBuilder.gridSize)
                         .attr("class", `textbox ${className}`);
@@ -919,22 +928,13 @@
                 event.target.hasAttribute('data-rule')) {
                 
                 const ruleName = event.target.getAttribute('data-rule');
-                const targetElement = document.getElementById(ruleName) || 
-                                    document.querySelector(`[data-rule="${ruleName}"]`) ||
-                                    document.querySelector(`h2:contains("${ruleName}")`);
                 
+                // Look for element with matching prefixed id (anchor-based navigation)
+                const targetElement = document.getElementById(`syntax-rule-${ruleName}`);
                 if (targetElement) {
                     targetElement.scrollIntoView({ behavior: 'auto', block: 'start' });
                 } else {
-                    // Try to find by heading text content
-                    const headings = document.querySelectorAll('h2');
-                    for (const heading of headings) {
-                        if (heading.textContent.trim() === ruleName) {
-                            heading.scrollIntoView({ behavior: 'auto', block: 'start' });
-                            return;
-                        }
-                    }
-                    console.warn(`No rule found for: ${ruleName}`);
+                    console.warn(`No anchor found for rule: ${ruleName} (add id="syntax-rule-${ruleName}" to the target element)`);
                 }
             }
         });

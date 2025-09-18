@@ -6,6 +6,9 @@
   --rail-font-size: 14px;
   --rail-track-width: 6px;
   --rail-text-border: 3px;
+  /* Corner radii for textboxes */
+  --rail-terminal-radius: calc(var(--rail-grid-size) * 0.9);
+  --rail-nonterminal-radius: calc(var(--rail-grid-size) * 0.6);
 }
 
 .rail-track {
