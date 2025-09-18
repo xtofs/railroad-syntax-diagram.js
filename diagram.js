@@ -1,8 +1,8 @@
 /**
  * Railroad Diagram Standalone Library
  * 
- * This file combines TrackBuilder and Diagram functionality into a single
- * browser-compatible script that works with file:// protocol without ES modules.
+ * A complete JavaScript library for generating railroad syntax diagrams.
+ * Browser-compatible script that works with file:// protocol without ES modules.
  * 
  * Dependencies: D3.js (loaded from CDN)
  * Usage: Include this script after D3.js and access via window.RailroadDiagrams
@@ -208,7 +208,7 @@
 
     // Diagram class - main class for creating and rendering railroad diagrams
     class Diagram {
-        constructor(containerId, grid, debugMode) {
+        constructor(containerId, grid, showGrid, showBounds) {
             this.container = typeof containerId === 'string'
                 ? (containerId.startsWith('#')
                     ? document.querySelector(containerId)
@@ -217,7 +217,8 @@
             if (!this.container) throw new Error('Container not found');
 
             this.gridSize = grid;
-            this.debugMode = debugMode;
+            this.showGrid = showGrid;
+            this.showBounds = showBounds;
 
             // Remove previous SVG if any
             d3.select(this.container).select("svg").remove();
@@ -246,8 +247,8 @@
         _invalidate() {
             this.svg.selectAll("*").remove();
 
-            // Add background grid first if in debug mode (before any content)
-            if (this.debugMode) {
+            // Add background grid first if showGrid is enabled (before any content)
+            if (this.showGrid) {
                 this._addBackgroundGridPattern();
             }
 
@@ -271,8 +272,8 @@
                         const childGroup = contextGroup.append("g")
                             .attr("transform", `translate(${x * this.gridSize}, ${y * this.gridSize})`);
 
-                        // Add debug data attributes if in debug mode
-                        if (this.debugMode) {
+                        // Add debug data attributes if showBounds is enabled
+                        if (this.showBounds) {
                             childGroup
                                 .attr("data-debug", "true")
                                 .attr("data-width", child.width)
@@ -322,8 +323,8 @@
                 const expressionRenderChild = createRenderChild(expressionGroup);
                 rule.expression.render(expressionGroup, expressionTrackBuilder, expressionRenderChild);
 
-                // Add debug data attributes for expression group if in debug mode
-                if (this.debugMode) {
+                // Add debug data attributes for expression group if showBounds is enabled
+                if (this.showBounds) {
                     expressionGroup
                         .attr("data-debug", "true")
                         .attr("data-width", rule.expression.width)
@@ -365,8 +366,10 @@
                 .attr("height", (currentY + 2) * this.gridSize); // Add 2 grid units padding at bottom
 
             // Update background grid dimensions and add debug overlay
-            if (this.debugMode) {
+            if (this.showGrid) {
                 this._updateBackgroundGridSize();
+            }
+            if (this.showBounds) {
                 this._addDebugOverlay();
             }
         }
@@ -755,6 +758,13 @@
         }
     }
 
+    // Function to read grid size from CSS custom properties
+    function getGridSizeFromCSS() {
+        const rootStyle = getComputedStyle(document.documentElement);
+        const gridSizeStr = rootStyle.getPropertyValue('--rail-grid-size').trim();
+        return parseInt(gridSizeStr) || 16; // fallback to 16px if not found
+    }
+
     // Function to render a single railroad diagram
     function renderRailroadDiagram(config) {
         const {
@@ -762,12 +772,13 @@
             expressionCode,
             ruleName,
             gridSize = 24,
-            debugMode = false
+            showGrid = false,
+            showBounds = false
         } = config;
 
         try {
             // Create diagram instance
-            const diagram = new Diagram(containerId, gridSize, debugMode);
+            const diagram = new Diagram(containerId, gridSize, showGrid, showBounds);
 
             // Evaluate the expression code in context with our functions
             const expression = eval(`(function() {
@@ -796,7 +807,9 @@
 
     // Function to automatically discover and render all diagram script tags
     function renderDiagramScripts(config = {}) {
-        const { gridSize = 24, debugMode = false } = config;
+        const { showGrid = false, showBounds = false } = config;
+        // Always read grid size from CSS custom properties
+        const gridSize = getGridSizeFromCSS();
 
         function doRender() {
             const scriptTags = document.querySelectorAll('script[type="text/railroad"]');
@@ -821,7 +834,8 @@
                             expressionCode,
                             ruleName,
                             gridSize,
-                            debugMode
+                            showGrid,
+                            showBounds
                         });
                     } catch (error) {
                         console.error(`Error rendering diagram for rule "${ruleName}":`, error);

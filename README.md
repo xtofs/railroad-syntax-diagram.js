@@ -106,7 +106,8 @@ The library uses a standalone global API that works with file:// protocol - no l
 - **Consistent alignment**: All elements follow a structured layout system
 - **Clean API**: Declarative syntax accessible via `window.RailroadDiagrams`
 - **Professional output**: SVG with proper stroke handling and visual polish
-- **Debug mode**: Optional visual debugging for layout development
+- **CSS-driven sizing**: Unified configuration via CSS custom properties
+- **Debug features**: Optional grid display and layout bounding boxes
 - **TypeScript support**: Complete type definitions for the global API
 
 ## API Reference
@@ -139,9 +140,24 @@ const { TrackBuilder, Diagram } = window.RailroadDiagrams;
 - **Hover Effects**: Nonterminals show visual feedback on hover
 - **Instant Scrolling**: Navigation uses instant scrolling (not animated)
 
+### Debug Features
+
+The library provides optional visual debugging tools:
+
+- **`showGrid`**: Displays a background grid with small crosses at grid points to visualize the layout system
+- **`showBounds`**: Shows pink dashed bounding boxes around each element and dotted baseline indicators
+
+```javascript
+// Enable debug features
+window.RailroadDiagrams.renderDiagramScripts({ 
+    showGrid: true,     // Show background grid
+    showBounds: true    // Show layout bounding boxes
+});
+```
+
 ### Sizing Configuration
 
-The library uses coordinated sizing parameters for optimal appearance. Here are recommended combinations:
+The library uses CSS custom properties for coordinated sizing configuration. All parameters are automatically synchronized.
 
 | Size            | Grid Size | Font Size | Rail Tracks | Text Borders | Use Case                             |
 |-----------------|-----------|-----------|-------------|--------------|--------------------------------------|
@@ -151,21 +167,40 @@ The library uses coordinated sizing parameters for optimal appearance. Here are 
 | **Large**       | 20px      | 16px      | 7px         | 3px          | Presentations, better readability    |
 | **Extra Large** | 24px      | 18px      | 8px         | 4px          | Posters, large displays              |
 
-**Configuration:**
+**Configuration via CSS Custom Properties:**
+
+```css
+/* Override the default Medium preset */
+:root {
+    --rail-grid-size: 20px;      /* Large preset */
+    --rail-font-size: 16px;
+    --rail-track-width: 7px;
+    --rail-text-border: 3px;
+}
+```
+
+**JavaScript (automatically reads sizing from CSS):**
 
 ```javascript
-// In your HTML script tag:
+// Simple usage - sizing comes from CSS custom properties
+window.RailroadDiagrams.renderDiagramScripts();
+
+// Optional debug features
 window.RailroadDiagrams.renderDiagramScripts({ 
-    gridSize: 16,  // Choose from table above
-    debugMode: false 
+    showGrid: true,     // Show background grid
+    showBounds: true    // Show layout bounding boxes
 });
 ```
 
+**Advanced: Override for specific containers:**
+
 ```css
-/* In your CSS or diagram.css: */
-.textbox-text { font-size: 14px; }      /* Text inside boxes */
-.rail-track { stroke-width: 6; }        /* All connecting rails */
-.textbox { stroke-width: 3px; }         /* Borders around text boxes */
+.compact-diagrams {
+    --rail-grid-size: 12px;
+    --rail-font-size: 10px;
+    --rail-track-width: 4px;
+    --rail-text-border: 2px;
+}
 ```
 
 ## Usage Example
@@ -175,8 +210,8 @@ window.RailroadDiagrams.renderDiagramScripts({
 const { textBox, sequence, stack } = window.RailroadDiagrams.Expression;
 const { Diagram } = window.RailroadDiagrams;
 
-// Create diagram with 24px grid and debug mode
-const diagram = new Diagram("diagram-container", 24, true);
+// Create diagram (grid size from CSS, with debug features)
+const diagram = new Diagram("diagram-container", 24, true, true);
 
 // Build complex expressions
 const expr = sequence(
@@ -227,9 +262,9 @@ Factory methods for creating railroad diagram elements with strict grid alignmen
 
 Manages the overall SVG canvas with grid system and rule rendering:
 
-- **Grid System**: 24px base grid with visual background grid for debugging
+- **Grid System**: CSS-driven grid size with optional visual background grid
 - **Rule Management**: Multiple named diagram rules with automatic layout
-- **Debug Mode**: Optional visual debugging with bounding boxes and baselines
+- **Debug Features**: Optional grid display (`showGrid`) and layout bounding boxes (`showBounds`)
 
 ## Key Technical Discoveries
 
@@ -274,8 +309,8 @@ Critical styling for precise rail rendering:
 const { textBox, sequence, stack } = window.RailroadDiagrams.Expression;
 const { Diagram } = window.RailroadDiagrams;
 
-// Create diagram with 24px grid and debug mode
-const diagram = new Diagram("diagram-container", 24, true);
+// Create diagram (grid size from CSS, with debug features)
+const diagram = new Diagram("diagram-container", 24, true, true);
 
 // Build complex expressions
 const expr = sequence(

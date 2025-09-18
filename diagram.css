@@ -1,9 +1,17 @@
 
 /* Rail track styling for connections */
+:root {
+  /* Default sizing configuration - Medium preset */
+  --rail-grid-size: 16px;
+  --rail-font-size: 14px;
+  --rail-track-width: 6px;
+  --rail-text-border: 3px;
+}
+
 .rail-track {
     fill: none; /* Prevent filling of the path */
     stroke: #000;
-    stroke-width: 6;
+    stroke-width: var(--rail-track-width);
     stroke-linecap: butt; /* End exactly at coordinates, don't extend beyond */
 }
 
@@ -20,7 +28,7 @@
 
 /* Terminal and non-terminal text box styling */
 .textbox {
-    stroke-width: 3px;
+    stroke-width: var(--rail-text-border);
     stroke: black;
     fill: none;
 }
@@ -35,7 +43,7 @@
 
 .textbox-text {
     font-family: Arial, sans-serif;
-    font-size: 14px;
+    font-size: var(--rail-font-size);
     fill: black;
     text-anchor: "middle";    
     dominant-baseline: "middle";
