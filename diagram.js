@@ -6,6 +6,8 @@
  * 
  * Dependencies: D3.js (loaded from CDN)
  * Usage: Include this script after D3.js and access via window.RailroadDiagrams
+ * 
+ * Security: Expression code is validated to prevent code injection attacks
  */
 
 (function(global) {
@@ -758,6 +760,57 @@
         }
     }
 
+    // Function to validate expression code for security
+    function validateExpressionCode(code) {
+        // Remove whitespace and comments for analysis
+        const cleanCode = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').trim();
+        
+        // Only allow safe characters: letters, numbers, quotes, parentheses, commas, spaces, and basic operators
+        const allowedPattern = /^[\s\w(),"'`+\-*/.\[\]\\]+$/;
+        if (!allowedPattern.test(cleanCode)) {
+            throw new Error('Expression contains disallowed characters');
+        }
+        
+        // Define allowed function names
+        const allowedFunctions = ['textBox', 'sequence', 'stack', 'bypass', 'loop'];
+        
+        // Extract all function calls (word followed by opening parenthesis)
+        const functionCalls = cleanCode.match(/\b(\w+)\s*\(/g);
+        if (functionCalls) {
+            for (const call of functionCalls) {
+                const funcName = call.replace(/\s*\(/, '');
+                if (!allowedFunctions.includes(funcName)) {
+                    throw new Error(`Disallowed function call: ${funcName}`);
+                }
+            }
+        }
+        
+        // Check for dangerous patterns
+        const dangerousPatterns = [
+            /\beval\s*\(/,
+            /\bFunction\s*\(/,
+            /\bsetTimeout\s*\(/,
+            /\bsetInterval\s*\(/,
+            /\bdocument\./,
+            /\bwindow\./,
+            /\blocation\./,
+            /\bfetch\s*\(/,
+            /\bXMLHttpRequest\s*\(/,
+            /\balert\s*\(/,
+            /\bconsole\./,
+            /javascript:/,
+            /data:/
+        ];
+        
+        for (const pattern of dangerousPatterns) {
+            if (pattern.test(cleanCode)) {
+                throw new Error(`Expression contains disallowed pattern: ${pattern.source}`);
+            }
+        }
+        
+        return true;
+    }
+
     // Function to read grid size from CSS custom properties
     function getGridSizeFromCSS() {
         const rootStyle = getComputedStyle(document.documentElement);
@@ -777,6 +830,9 @@
         } = config;
 
         try {
+            // Validate the expression code for security
+            validateExpressionCode(expressionCode);
+            
             // Create diagram instance
             const diagram = new Diagram(containerId, gridSize, showGrid, showBounds);
 

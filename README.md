@@ -108,6 +108,7 @@ The library uses a standalone global API that works with file:// protocol - no l
 - **Professional output**: SVG with proper stroke handling and visual polish
 - **CSS-driven sizing**: Unified configuration via CSS custom properties
 - **Debug features**: Optional grid display and layout bounding boxes
+- **Security validation**: Expression code is validated to prevent code injection
 - **TypeScript support**: Complete type definitions for the global API
 
 ## API Reference
@@ -154,6 +155,28 @@ window.RailroadDiagrams.renderDiagramScripts({
     showBounds: true    // Show layout bounding boxes
 });
 ```
+
+### Security Features
+
+The library includes validation to prevent code injection attacks through expression scripts:
+
+- **Function Allowlist**: Only `textBox`, `sequence`, `stack`, `bypass`, and `loop` functions are permitted
+- **Character Validation**: Expressions can only contain safe characters (letters, numbers, quotes, parentheses, etc.)
+- **Dangerous Pattern Detection**: Blocks common attack vectors like `eval()`, `fetch()`, `document.`, etc.
+
+```html
+<!-- ✅ Safe - will render correctly -->
+<script type="text/railroad" data-rule="safe">
+    sequence(textBox("SELECT", "keyword"), textBox("*", "operator"))
+</script>
+
+<!-- ❌ Blocked - will throw validation error -->
+<script type="text/railroad" data-rule="malicious">
+    eval('alert("XSS")'), textBox("fake", "terminal")
+</script>
+```
+
+All validation errors are logged to the console and display an error message instead of rendering the diagram.
 
 ### Sizing Configuration
 
