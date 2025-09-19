@@ -208,6 +208,105 @@
         }
     }
 
+    // RenderContext class - provides optimized rendering interface with cached CSS properties
+    class RenderContext {
+        constructor(group, gridSize, showBounds, parentContext = null) {
+            this.group = group;
+            this.gridSize = gridSize;
+            this.showBounds = showBounds;
+            this.trackBuilder = new TrackBuilder(group, gridSize);
+            
+            // Cache CSS properties: either inherit from parent or read from CSS
+            if (parentContext) {
+                // Inherit cached values from parent context (optimization)
+                this.terminalRadius = parentContext.terminalRadius;
+                this.nonterminalRadius = parentContext.nonterminalRadius;
+            } else {
+                // Read CSS properties once at root level
+                this._cacheCSSProperties();
+            }
+        }
+
+        _cacheCSSProperties() {
+            const rootStyle = getComputedStyle(document.documentElement);
+            
+            // Cache corner radius values
+            const terminalRadiusStr = rootStyle.getPropertyValue('--rail-terminal-radius').trim();
+            const nonterminalRadiusStr = rootStyle.getPropertyValue('--rail-nonterminal-radius').trim();
+            
+            this.terminalRadius = parseInt(terminalRadiusStr) || (this.gridSize * 0.9);
+            this.nonterminalRadius = parseInt(nonterminalRadiusStr) || (this.gridSize * 0.6);
+        }
+
+        renderChild(child, x, y) {
+            // Create child group with translation relative to context group
+            const childGroup = this.group.append("g")
+                .attr("transform", `translate(${x * this.gridSize}, ${y * this.gridSize})`);
+
+            // Add debug data attributes if showBounds is enabled
+            if (this.showBounds) {
+                childGroup
+                    .attr("data-debug", "true")
+                    .attr("data-width", child.width)
+                    .attr("data-height", child.height)
+                    .attr("data-baseline-y", child.baselineY)
+                    .attr("data-grid-size", this.gridSize);
+            }
+
+            // Create RenderContext for this child's context, inheriting cached values
+            const childRenderContext = new RenderContext(childGroup, this.gridSize, this.showBounds, this);
+
+            // Call child's render method with new context
+            child.render(childRenderContext);
+        }
+
+        renderTextBox(textContent, className, width) {
+            const height = 2;
+            const adjustedWidth = width; // Width should already be adjusted by caller
+
+            // Add left rail line (1 unit long) - coordinates in grid units
+            this.trackBuilder
+                .start(0, 1, Direction.EAST)
+                .forward(1)
+                .finish("rail-track", "textbox-left");
+
+            // Add right rail line (1 unit long) - coordinates in grid units
+            this.trackBuilder
+                .start(adjustedWidth - 1, 1, Direction.EAST)
+                .forward(1)
+                .finish("rail-track", "textbox-right");
+
+            // Add the rectangle for the text-box (offset by 1 unit from left) - coordinates in pixels
+            const textboxWidth = adjustedWidth - 2; // Full width minus the 2 rail units (1 left + 1 right)
+            
+            // Use cached corner radius value
+            const cornerRadius = className === 'nonterminal' ? this.nonterminalRadius : this.terminalRadius;
+            
+            const rect = this.group.append("rect")
+                .attr("x", 1 * this.gridSize)
+                .attr("y", 0)
+                .attr("rx", cornerRadius)
+                .attr("ry", cornerRadius)
+                .attr("width", textboxWidth * this.gridSize) // Use calculated text-box width
+                .attr("height", height * this.gridSize)
+                .attr("class", `textbox ${className}`);
+
+            // Add the text centered in the rectangle (offset by 1 unit from left) - coordinates in pixels
+            const text = this.group.append("text")
+                .attr("x", (1 + textboxWidth / 2) * this.gridSize)  // Center horizontally in text-box
+                .attr("y", (height / 2) * this.gridSize)  // Center vertically
+                .attr("text-anchor", "middle")          // Horizontal centering
+                .attr("dominant-baseline", "middle")    // Vertical centering
+                .attr("class", `textbox-text ${className}`)
+                .text(textContent);
+
+            // Add data attribute for nonterminals to enable click navigation
+            if (className === 'nonterminal') {
+                text.attr("data-rule", textContent);
+            }
+        }
+    }
+
     // Diagram class - main class for creating and rendering railroad diagrams
     class Diagram {
         constructor(containerId, grid, showGrid, showBounds) {
@@ -267,36 +366,8 @@
                 // Create TrackBuilder for this rule
                 const trackBuilder = new TrackBuilder(ruleGroup, this.gridSize);
 
-                // Factory function to create renderChild for any context group
-                const createRenderChild = (contextGroup) => {
-                    return (child, x, y) => {
-                        // Create child group with translation relative to context group
-                        const childGroup = contextGroup.append("g")
-                            .attr("transform", `translate(${x * this.gridSize}, ${y * this.gridSize})`);
-
-                        // Add debug data attributes if showBounds is enabled
-                        if (this.showBounds) {
-                            childGroup
-                                .attr("data-debug", "true")
-                                .attr("data-width", child.width)
-                                .attr("data-height", child.height)
-                                .attr("data-baseline-y", child.baselineY)
-                                .attr("data-grid-size", this.gridSize);
-                        }
-
-                        // Create trackbuilder for child
-                        const childTrackBuilder = new TrackBuilder(childGroup, this.gridSize);
-
-                        // Create renderChild for this child's context
-                        const childRenderChild = createRenderChild(childGroup);
-
-                        // Call child's render method
-                        child.render(childGroup, childTrackBuilder, childRenderChild);
-                    };
-                };
-
-                // Create renderChild for the rule level
-                const renderChild = createRenderChild(ruleGroup);
+                // Create root-level RenderContext that will cache CSS properties
+                const rootRenderContext = new RenderContext(ruleGroup, this.gridSize, this.showBounds);
 
                 // Calculate positions for start and end terminals
                 const terminalRadius = this.gridSize * 0.75; // Radius = 3/4 grid unit
@@ -321,9 +392,10 @@
                 // Render the expression with offset to make room for start terminal
                 const expressionGroup = ruleGroup.append("g")
                     .attr("transform", `translate(${expressionStartX * this.gridSize}, 0)`);
-                const expressionTrackBuilder = new TrackBuilder(expressionGroup, this.gridSize);
-                const expressionRenderChild = createRenderChild(expressionGroup);
-                rule.expression.render(expressionGroup, expressionTrackBuilder, expressionRenderChild);
+                
+                // Create RenderContext for expression rendering
+                const expressionRenderContext = new RenderContext(expressionGroup, this.gridSize, this.showBounds);
+                rule.expression.render(expressionRenderContext);
 
                 // Add debug data attributes for expression group if showBounds is enabled
                 if (this.showBounds) {
@@ -511,54 +583,8 @@
                 width: adjustedWidth,
                 height: height,
                 baselineY: 1,
-                render(group, trackBuilder, renderChild) {
-
-                    // Add left rail line (1 unit long) - coordinates in grid units
-                    trackBuilder
-                        .start(0, 1, Direction.EAST)
-                        .forward(1)
-                        .finish("rail-track", "textbox-left");
-
-                    // Add right rail line (1 unit long) - coordinates in grid units
-                    trackBuilder
-                        .start(adjustedWidth - 1, 1, Direction.EAST)
-                        .forward(1)
-                        .finish("rail-track", "textbox-right");
-
-                    // Add the rectangle for the text-box (offset by 1 unit from left) - coordinates in pixels
-                    const textboxWidth = adjustedWidth - 2; // Full width minus the 2 rail units (1 left + 1 right)
-                    
-                    // Get corner radius from CSS custom properties
-                    const rootStyle = getComputedStyle(document.documentElement);
-                    const radiusProperty = className === 'nonterminal' 
-                        ? '--rail-nonterminal-radius' 
-                        : '--rail-terminal-radius';
-                    const radiusStr = rootStyle.getPropertyValue(radiusProperty).trim();
-                    const cornerRadius = parseInt(radiusStr) || (trackBuilder.gridSize * (className === 'nonterminal' ? 0.6 : 0.9));
-                    
-                    const rect = group.append("rect")
-                        .attr("x", 1 * trackBuilder.gridSize)
-                        .attr("y", 0)
-                        .attr("rx", cornerRadius)
-                        .attr("ry", cornerRadius)
-                        .attr("width", textboxWidth * trackBuilder.gridSize) // Use calculated text-box width
-                        .attr("height", height * trackBuilder.gridSize)
-                        .attr("class", `textbox ${className}`);
-
-                    // Add the text centered in the rectangle (offset by 1 unit from left) - coordinates in pixels
-                    const text = group.append("text")
-                        .attr("x", (1 + textboxWidth / 2) * trackBuilder.gridSize)  // Center horizontally in text-box
-                        .attr("y", (height / 2) * trackBuilder.gridSize)  // Center vertically
-                        .attr("text-anchor", "middle")          // Horizontal centering
-                        .attr("dominant-baseline", "middle")    // Vertical centering
-                        .attr("class", `textbox-text ${className}`)
-                        .text(textContent);
-
-                    // Add data attribute for nonterminals to enable click navigation
-                    if (className === 'nonterminal') {
-                        text.attr("data-rule", textContent);
-                    }
-
+                render(renderContext) {
+                    renderContext.renderTextBox(textContent, className, adjustedWidth);
                 }
             };
         }
@@ -573,7 +599,7 @@
                 width: totalWidth,
                 height: maxHeight,
                 baselineY: baselineY,
-                render(group, trackBuilder, renderChild) {
+                render(renderContext) {
                     let currentX = 0;
 
                     children.forEach((child, index) => {
@@ -581,14 +607,14 @@
                         const childY = baselineY - child.baselineY;
 
                         // Call renderChild with child and relative coordinates
-                        renderChild(child, currentX, childY);
+                        renderContext.renderChild(child, currentX, childY);
 
                         // Add horizontal rail connection to next child (except for the last child)
                         if (index < children.length - 1) {
                             const railStartX = currentX + child.width;
                             const railY = baselineY;
 
-                            trackBuilder
+                            renderContext.trackBuilder
                                 .start(railStartX, railY, Direction.EAST)
                                 .forward(2) // 2 unit space
                                 .finish("rail-track", `seq-${index}`);
@@ -611,7 +637,7 @@
                 width: maxWidth,
                 height: totalHeight,
                 baselineY: baselineY,
-                render(group, trackBuilder, renderChild) {
+                render(renderContext) {
                     let currentY = 0;
                     const leftConnectionX = 0;
                     const rightConnectionX = maxWidth;
@@ -622,20 +648,20 @@
                         const childX = xOffset;
                         const childBaselineY = currentY + child.baselineY;
 
-                        renderChild(child, childX, currentY);
+                        renderContext.renderChild(child, childX, currentY);
 
                         const childLeftX = childX;
                         const childRightX = childX + child.width;
 
                         if (index === 0) {
                             // For first child: straight line from left connection to child
-                            trackBuilder
+                            renderContext.trackBuilder
                                 .start(leftConnectionX, mainBaselineY, Direction.EAST)
                                 .forward(childLeftX - leftConnectionX)
                                 .finish("rail-track", `child${index}-left`);
 
                             // For first child: straight line from child to right connection
-                            trackBuilder
+                            renderContext.trackBuilder
                                 .start(childRightX, childBaselineY, Direction.EAST)
                                 .forward(rightConnectionX - childRightX)
                                 .finish("rail-track", `child${index}-right`);
@@ -645,7 +671,7 @@
                             const horizontalToChild = childLeftX - leftConnectionX;
 
                             // Left rail path
-                            trackBuilder
+                            renderContext.trackBuilder
                                 .start(leftConnectionX, mainBaselineY, Direction.EAST)
                                 .turnRight()
                                 .forward(verticalDistance - 2)
@@ -656,7 +682,7 @@
                             // Right rail path
                             const horizontalFromChild = rightConnectionX - childRightX;
 
-                            trackBuilder
+                            renderContext.trackBuilder
                                 .start(rightConnectionX, mainBaselineY, Direction.WEST)
                                 .turnLeft()
                                 .forward(verticalDistance - 2)
@@ -680,14 +706,14 @@
                 width: width,
                 height: height,
                 baselineY: baselineY,
-                render(group, trackBuilder, renderChild) {
+                render(renderContext) {
                     const mainBaseline = baselineY;
                     const childX = (width - child.width) / 2;
 
-                    renderChild(child, childX, 1);
+                    renderContext.renderChild(child, childX, 1);
 
                     // Draw the bypass path (above the child)
-                    trackBuilder
+                    renderContext.trackBuilder
                         .start(0, mainBaseline, Direction.EAST)
                         .turnLeft()
                         .forward(baselineY - 2)
@@ -698,11 +724,11 @@
                         .turnLeft()
                         .finish("rail-track", "bypass-path");
 
-                    trackBuilder
+                    renderContext.trackBuilder
                         .start(0, mainBaseline, Direction.EAST)
                         .forward(2)
                         .finish("rail-track", "through-path");
-                    trackBuilder
+                    renderContext.trackBuilder
                         .start(width, mainBaseline, Direction.WEST)
                         .forward(2)
                         .finish("rail-track", "through-path");
@@ -719,14 +745,14 @@
                 width: width,
                 height: height,
                 baselineY: baselineY,
-                render(group, trackBuilder, renderChild) {
+                render(renderContext) {
                     const mainBaseline = baselineY;
                     const childX = (width - child.width) / 2;
 
-                    renderChild(child, childX, 1);
+                    renderContext.renderChild(child, childX, 1);
 
                     // Draw the loop path
-                    trackBuilder
+                    renderContext.trackBuilder
                         .start(2, mainBaseline, Direction.WEST)
                         .turnRight()
                         .forward(baselineY - 2)
@@ -737,11 +763,11 @@
                         .turnRight()
                         .finish("rail-track", "loop-path");
 
-                    trackBuilder
+                    renderContext.trackBuilder
                         .start(0, mainBaseline, Direction.EAST)
                         .forward(2)
                         .finish("rail-track", "through-path");
-                    trackBuilder
+                    renderContext.trackBuilder
                         .start(width, mainBaseline, Direction.WEST)
                         .forward(2)
                         .finish("rail-track", "through-path");
