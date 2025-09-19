@@ -36,6 +36,9 @@
             this.currentY = 0;
             this.currentDirection = Direction.EAST;
             this.paths = [];
+            
+            // Constant for rail track CSS class
+            this.RAIL_TRACK_CLASS = "rail-track";
 
             this.ARC_TRANSITIONS = {
                 'east-north': 'Q {x1} {y1} {x2} {y2}',
@@ -171,7 +174,7 @@
             this.currentPath.commands.push(arcCommand);
         }
 
-        finish(className = "rail-track", debugId = null) {
+        finish(debugId = null) {
             if (!this.currentPath) {
                 throw new Error('No path to finish. Call start() first.');
             }
@@ -179,7 +182,7 @@
             const pathElement = this.group.append("path")
                 .attr("d", this.currentPath.commands.join(" "))
                 .attr("data-seq", this.currentPath.debugSequence.join(" "))
-                .classed(className, true);
+                .classed(this.RAIL_TRACK_CLASS, true);
 
             if (debugId) {
                 pathElement.attr("data-id", debugId);
@@ -268,13 +271,13 @@
             this.trackBuilder
                 .start(0, 1, Direction.EAST)
                 .forward(1)
-                .finish("rail-track", "textbox-left");
+                .finish("textbox-left");
 
             // Add right rail line (1 unit long) - coordinates in grid units
             this.trackBuilder
                 .start(adjustedWidth - 1, 1, Direction.EAST)
                 .forward(1)
-                .finish("rail-track", "textbox-right");
+                .finish("textbox-right");
 
             // Add the rectangle for the text-box (offset by 1 unit from left) - coordinates in pixels
             const textboxWidth = adjustedWidth - 2; // Full width minus the 2 rail units (1 left + 1 right)
@@ -387,7 +390,7 @@
                 startTrackBuilder
                     .start(0, expressionBaseline, Direction.EAST)
                     .forward(2) // 2 grid units to reach expression start
-                    .finish("rail-track", "start-rail");
+                    .finish("start-rail");
 
                 // Render the expression with offset to make room for start terminal
                 const expressionGroup = ruleGroup.append("g")
@@ -414,7 +417,7 @@
                 startTrackBuilder
                     .start(expressionStartX + rule.expression.width, expressionBaseline, Direction.EAST)
                     .forward(2) // 2 grid units to reach terminal
-                    .finish("rail-track", "end-rail");
+                    .finish("end-rail");
 
                 // Add end terminal (black circle centered on grid point)
                 ruleGroup.append("circle")
@@ -620,7 +623,7 @@
                             renderContext.trackBuilder
                                 .start(railStartX, railY, Direction.EAST)
                                 .forward(2) // 2 unit space
-                                .finish("rail-track", `seq-${index}`);
+                                .finish(`seq-${index}`);
                         }
 
                         currentX += child.width + 2; // Add 2 for the unit space
@@ -661,13 +664,13 @@
                             renderContext.trackBuilder
                                 .start(leftConnectionX, mainBaselineY, Direction.EAST)
                                 .forward(childLeftX - leftConnectionX)
-                                .finish("rail-track", `child${index}-left`);
+                                .finish(`child${index}-left`);
 
                             // For first child: straight line from child to right connection
                             renderContext.trackBuilder
                                 .start(childRightX, childBaselineY, Direction.EAST)
                                 .forward(rightConnectionX - childRightX)
-                                .finish("rail-track", `child${index}-right`);
+                                .finish(`child${index}-right`);
                         } else {
                             // For other children: create proper branching paths
                             const verticalDistance = childBaselineY - mainBaselineY;
@@ -680,7 +683,7 @@
                                 .forward(verticalDistance - 2)
                                 .turnLeft()
                                 .forward(horizontalToChild - 2)
-                                .finish("rail-track", `child${index}-left`);
+                                .finish(`child${index}-left`);
 
                             // Right rail path
                             const horizontalFromChild = rightConnectionX - childRightX;
@@ -691,7 +694,7 @@
                                 .forward(verticalDistance - 2)
                                 .turnRight()
                                 .forward(horizontalFromChild - 2)
-                                .finish("rail-track", `child${index}-right`);
+                                .finish(`child${index}-right`);
                         }
 
                         currentY += child.height + 1;
@@ -725,16 +728,16 @@
                         .turnRight()
                         .forward(baselineY - 2)
                         .turnLeft()
-                        .finish("rail-track", "bypass-path");
+                        .finish("bypass-path");
 
                     renderContext.trackBuilder
                         .start(0, mainBaseline, Direction.EAST)
                         .forward(2)
-                        .finish("rail-track", "through-path");
+                        .finish("through-path");
                     renderContext.trackBuilder
                         .start(width, mainBaseline, Direction.WEST)
                         .forward(2)
-                        .finish("rail-track", "through-path");
+                        .finish("through-path");
                 }
             }
         }
@@ -764,16 +767,16 @@
                         .turnRight()
                         .forward(baselineY - 2)
                         .turnRight()
-                        .finish("rail-track", "loop-path");
+                        .finish("loop-path");
 
                     renderContext.trackBuilder
                         .start(0, mainBaseline, Direction.EAST)
                         .forward(2)
-                        .finish("rail-track", "through-path");
+                        .finish("through-path");
                     renderContext.trackBuilder
                         .start(width, mainBaseline, Direction.WEST)
                         .forward(2)
-                        .finish("rail-track", "through-path");
+                        .finish("through-path");
                 }
             }
         }
