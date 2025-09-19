@@ -571,6 +571,9 @@
     // Expression class - static methods for creating railroad diagram expressions
     class Expression {
         
+        /**
+         * @returns LayoutBox
+         */
         static textBox(textContent, className) {
             const height = 2;
             const gridSize = getGridSizeFromCSS(); // Use actual grid size from CSS
