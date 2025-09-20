@@ -1,43 +1,87 @@
 // Test the validation function with OData example content
-const testStrings = [
-    'textBox("segment-nz", "nonterminal")',
-    'textBox("\":\"", "terminal")',
-    'textBox("\"/\"", "terminal")', 
-    'textBox("\"://\"", "terminal")',
-    'sequence(textBox("host", "nonterminal"), bypass(textBox("port", "nonterminal")))'
+const testCases = [
+    // Tests that should PASS validation
+    { code: 'textBox("segment-nz", "nonterminal")', shouldPass: true },
+    { code: 'textBox(":", "terminal")', shouldPass: true },
+    { code: 'textBox("/", "terminal")', shouldPass: true },
+    { code: 'textBox("://", "terminal")', shouldPass: true },
+    { code: 'sequence(textBox("host", "nonterminal"), bypass(textBox("port", "nonterminal")))', shouldPass: true },
+    { code: 'textBox("MultiLineString(", "terminal")', shouldPass: true, comment: 'Test case for the reported issue - should pass' },
+    { code: 'textBox("someFunc(", "terminal")', shouldPass: true },
+    { code: 'textBox("anotherFunc)", "terminal")', shouldPass: true },
+    { code: 'textBox("Function(malicious)", "terminal")', shouldPass: true, comment: 'Function keyword in string - should pass' },
+    { code: 'textBox("eval(code)", "terminal")', shouldPass: true, comment: 'eval in string - should pass' },
+    { code: 'textBox("$filter", "terminal")', shouldPass: true, comment: 'Dollar sign in string' },
+    { code: 'textBox("complex(nested(parens))", "terminal")', shouldPass: true, comment: 'Nested parens in string' },
+    { code: 'textBox("string with (parens) inside", "terminal")', shouldPass: true },
+    
+    // Tests that should FAIL validation (security checks)
+    { code: 'badFunction("test")', shouldPass: false, comment: 'Should fail - disallowed function' },
+    { code: 'eval("dangerous")', shouldPass: false, comment: 'Should fail - dangerous function' },
+    { code: 'MultiLineString("test")', shouldPass: false, comment: 'Should fail - looks like function call outside string' },
 ];
 
-// Copy the validation function from diagram.js for testing
-function validateExpressionCode(code) {
-    const cleanCode = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').trim();
+// Import the validation functions from diagram.js
+const { validateExpressionCode, tokenize, TokenType } = require('./diagram.js');
+
+// Test each case with clear pass/fail expectations
+let totalTests = 0;
+let passedTests = 0;
+let failedTests = 0;
+
+console.log('🧪 Railroad Diagram Validation Tests\n');
+
+testCases.forEach((testCase, index) => {
+    totalTests++;
+    const { code, shouldPass, comment } = testCase;
     
-    const allowedPattern = /^[\s\w(),:\/\-"'`+*.\[\]\\]+$/;
-    if (!allowedPattern.test(cleanCode)) {
-        throw new Error('Expression contains disallowed characters');
-    }
-    
-    const allowedFunctions = ['textBox', 'sequence', 'stack', 'bypass', 'loop'];
-    
-    const functionCalls = cleanCode.match(/\b(\w+)\s*\(/g);
-    if (functionCalls) {
-        for (const call of functionCalls) {
-            const funcName = call.replace(/\s*\(/, '');
-            if (!allowedFunctions.includes(funcName)) {
-                throw new Error(`Disallowed function call: ${funcName}`);
-            }
+    try {
+        validateExpressionCode(code);
+        
+        if (shouldPass) {
+            console.log(`✅ Test ${index + 1}: PASSED (as expected)`);
+            console.log(`   Code: ${code}`);
+            if (comment) console.log(`   Note: ${comment}`);
+            passedTests++;
+        } else {
+            console.log(`❌ Test ${index + 1}: FAILED (validation should have rejected this code)`);
+            console.log(`   Code: ${code}`);
+            console.log(`   Expected: Validation should fail`);
+            console.log(`   Actual: Validation passed`);
+            if (comment) console.log(`   Note: ${comment}`);
+            failedTests++;
+        }
+        
+    } catch (error) {
+        if (!shouldPass) {
+            console.log(`✅ Test ${index + 1}: PASSED (correctly rejected invalid code)`);
+            console.log(`   Code: ${code}`);
+            console.log(`   Rejected with: ${error.message}`);
+            if (comment) console.log(`   Note: ${comment}`);
+            passedTests++;
+        } else {
+            console.log(`❌ Test ${index + 1}: FAILED (validation incorrectly rejected valid code)`);
+            console.log(`   Code: ${code}`);
+            console.log(`   Expected: Validation should pass`);
+            console.log(`   Actual: ${error.message}`);
+            if (comment) console.log(`   Note: ${comment}`);
+            failedTests++;
         }
     }
     
-    return true;
-}
-
-// Test each string
-testStrings.forEach((testString, index) => {
-    try {
-        validateExpressionCode(testString);
-        console.log(`✓ Test ${index + 1} passed: ${testString}`);
-    } catch (error) {
-        console.log(`✗ Test ${index + 1} failed: ${testString}`);
-        console.log(`  Error: ${error.message}`);
-    }
+    console.log(''); // Empty line for readability
 });
+
+// Summary
+console.log('📊 Test Summary');
+console.log('================');
+console.log(`Total tests: ${totalTests}`);
+console.log(`Passed: ${passedTests}`);
+console.log(`Failed: ${failedTests}`);
+
+if (failedTests === 0) {
+    console.log('🎉 All tests passed!');
+} else {
+    console.log(`⚠️  ${failedTests} test(s) failed`);
+    process.exit(1);
+}

@@ -971,25 +971,129 @@
      * @returns {boolean} True if validation passes
      * @throws {Error} When code contains disallowed functions or dangerous patterns
      */
-    function validateExpressionCode(code) {
-        // Remove whitespace and comments for analysis
-        const cleanCode = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').trim();
+    /**
+     * Token types for the expression language
+     * @enum {string}
+     */
+    const TokenType = {
+        IDENTIFIER: 'IDENTIFIER',
+        OPEN_PAREN: 'OPEN_PAREN',
+        CLOSE_PAREN: 'CLOSE_PAREN',
+        COMMA: 'COMMA',
+        STRING: 'STRING',
+        WHITESPACE: 'WHITESPACE',
+        EOF: 'EOF'
+    };
+
+    /**
+     * Simple tokenizer for railroad expression language using regex with named groups
+     * Handles: identifiers, parentheses, commas, double-quoted strings
+     * @param {string} code - The code to tokenize
+     * @param {boolean} [skipWhitespace=false] - Whether to skip whitespace tokens in output
+     * @returns {Array<{type: string, value: string, position: number}>} Array of tokens
+     */
+    function tokenize(code, skipWhitespace = false) {
+        const tokens = [];
         
-        // Define allowed function names
-        const allowedFunctions = ['textBox', 'sequence', 'stack', 'bypass', 'loop'];
+        // Single regex with named capture groups for all token types
+        // Note: Order matters - more specific patterns should come first
+        const tokenRegex = /(?<string>"(?:[^"\\]|\\.)*")|(?<identifier>[a-zA-Z_][a-zA-Z0-9_]*)|(?<openParen>\()|(?<closeParen>\))|(?<comma>,)|(?<whitespace>\s+)/g;
         
-        // Extract all function calls (word followed by opening parenthesis)
-        const functionCalls = cleanCode.match(/\b(\w+)\s*\(/g);
-        if (functionCalls) {
-            for (const call of functionCalls) {
-                const funcName = call.replace(/\s*\(/, '');
-                if (!allowedFunctions.includes(funcName)) {
-                    throw new Error(`Disallowed function call: ${funcName}`);
-                }
+        let lastIndex = 0;
+        let match;
+        
+        // Use exec() in a loop to get all matches with their positions
+        while ((match = tokenRegex.exec(code)) !== null) {
+            // Check if there's any unmatched content between last match and current match
+            if (match.index > lastIndex) {
+                const unmatched = code.slice(lastIndex, match.index);
+                throw new Error(`Unexpected character(s) '${unmatched}' at position ${lastIndex}`);
             }
+            
+            // Determine which named group matched
+            const groups = match.groups;
+            let tokenType, tokenValue;
+            
+            if (groups.string) {
+                tokenType = TokenType.STRING;
+                tokenValue = groups.string;
+            } else if (groups.identifier) {
+                tokenType = TokenType.IDENTIFIER;
+                tokenValue = groups.identifier;
+            } else if (groups.openParen) {
+                tokenType = TokenType.OPEN_PAREN;
+                tokenValue = groups.openParen;
+            } else if (groups.closeParen) {
+                tokenType = TokenType.CLOSE_PAREN;
+                tokenValue = groups.closeParen;
+            } else if (groups.comma) {
+                tokenType = TokenType.COMMA;
+                tokenValue = groups.comma;
+            } else if (groups.whitespace) {
+                tokenType = TokenType.WHITESPACE;
+                tokenValue = groups.whitespace;
+            }
+            
+            // Skip whitespace tokens if requested
+            if (!skipWhitespace || tokenType !== TokenType.WHITESPACE) {
+                tokens.push({ 
+                    type: tokenType, 
+                    value: tokenValue, 
+                    position: match.index 
+                });
+            }
+            
+            lastIndex = tokenRegex.lastIndex;
         }
         
-        // Check for dangerous patterns
+        // Check if there's any unmatched content at the end
+        if (lastIndex < code.length) {
+            const unmatched = code.slice(lastIndex);
+            throw new Error(`Unexpected character(s) '${unmatched}' at position ${lastIndex}`);
+        }
+        
+        tokens.push({ type: TokenType.EOF, value: '', position: code.length });
+        return tokens;
+    }
+
+    /**
+     * Validates expression code using tokenization approach
+     * More robust than regex matching, handles strings with any content correctly
+     * @param {string} code - JavaScript code string to validate
+     * @returns {boolean} True if validation passes
+     * @throws {Error} When code contains disallowed functions or dangerous patterns
+     */
+    function validateExpressionCode(code) {
+        try {
+            // Tokenize the code, skipping whitespace for easier analysis
+            const tokens = tokenize(code, true);
+            
+            // Define allowed function names
+            const allowedFunctions = ['textBox', 'sequence', 'stack', 'bypass', 'loop'];
+            
+            // Look for function call patterns: IDENTIFIER followed by OPEN_PAREN
+            for (let i = 0; i < tokens.length - 1; i++) {
+                const currentToken = tokens[i];
+                const nextToken = tokens[i + 1];
+                
+                // Check if we have identifier followed by opening parenthesis
+                if (currentToken.type === TokenType.IDENTIFIER && 
+                    nextToken && nextToken.type === TokenType.OPEN_PAREN) {
+                    
+                    const funcName = currentToken.value;
+                    if (!allowedFunctions.includes(funcName)) {
+                        throw new Error(`Disallowed function call: ${funcName}`);
+                    }
+                }
+            }
+            
+        } catch (error) {
+            // Re-throw tokenization errors or validation errors
+            throw error;
+        }
+        
+        // Check for dangerous patterns in non-string tokens only
+        const tokens = tokenize(code, false); // Include all tokens for pattern checking
         const dangerousPatterns = [
             /\beval\s*\(/,
             /\bFunction\s*\(/,
@@ -1006,8 +1110,14 @@
             /data:/
         ];
         
+        // Reconstruct code without string literals for pattern checking
+        const codeWithoutStrings = tokens
+            .filter(token => token.type !== TokenType.STRING)
+            .map(token => token.value)
+            .join('');
+        
         for (const pattern of dangerousPatterns) {
-            if (pattern.test(cleanCode)) {
+            if (pattern.test(codeWithoutStrings)) {
                 throw new Error(`Expression contains disallowed pattern: ${pattern.source}`);
             }
         }
@@ -1130,10 +1240,12 @@
             });
         }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', doRender);
-        } else {
-            doRender();
+        if (typeof document !== 'undefined') {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', doRender);
+            } else {
+                doRender();
+            }
         }
     }
 
@@ -1159,11 +1271,18 @@
         });
     }
 
-    // Set up click handlers when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupClickHandlers);
-    } else {
-        setupClickHandlers();
+    // Set up automatic initialization when DOM is ready (browser only)
+    if (typeof document !== 'undefined') {
+        function initializeRailroadDiagrams() {
+            setupClickHandlers();
+            renderDiagramScripts(); // Automatically render all diagrams
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeRailroadDiagrams);
+        } else {
+            initializeRailroadDiagrams();
+        }
     }
 
     // Expose minimal public API to global scope
@@ -1176,7 +1295,17 @@
         Expression,
         
         // Advanced: Direct diagram manipulation (rare usage)
-        Diagram
+        Diagram,
+        
+        // Validation utilities (for testing and advanced usage)
+        validateExpressionCode,
+        tokenize,
+        TokenType
     };
 
-})(window);
+})(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
+
+// Node.js module support
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = typeof window !== 'undefined' ? window.RailroadDiagrams : global.RailroadDiagrams;
+}
