@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SVG Diagram Demo</title>
     <link rel="stylesheet" href="diagram.css">
-    
+
     <!-- D3.js dependency -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <!-- Railroad Diagram Library -->
@@ -15,7 +15,8 @@
 
 <body>
     <h1>Railroad Diagram Examples</h1>
-    <p>Examples based on the <a href="https://en.wikipedia.org/wiki/Syntax_diagram">Wikipedia syntax diagram</a> grammar:</p>
+    <p>Examples based on the <a href="https://en.wikipedia.org/wiki/Syntax_diagram">Wikipedia syntax diagram</a>
+        grammar:</p>
 
     <div class="syntax-rule" id="syntax-rule-expression">
         <h2>expression</h2>
@@ -100,9 +101,67 @@
         </script>
     </div>
 
+    <div class="syntax-rule">
+        <h2>resourcePath</h2>
+        <p><code>resourcePath := entitySetName [ collectionNavigation ] / singletonEntity [ singleNavigation ] / actionImportCall / ...</code>
+        </p>
+        <script type="text/railroad" data-rule="resourcePath">
+            stack(
+                sequence(
+                    textBox("entitySetName", "nonterminal"),
+                    bypass(textBox("collectionNavigation", "nonterminal"))
+                ),
+                sequence(
+                    textBox("singletonEntity", "nonterminal"),
+                    bypass(textBox("singleNavigation", "nonterminal"))
+                ),
+                textBox("actionImportCall", "nonterminal"),
+                sequence(
+                    textBox("entityColFunctionImportCall", "nonterminal"),
+                    bypass(textBox("collectionNavigation", "nonterminal"))
+                ),
+                sequence(
+                    textBox("entityFunctionImportCall", "nonterminal"),
+                    bypass(textBox("singleNavigation", "nonterminal"))
+                ),
+                sequence(
+                    textBox("complexColFunctionImportCall", "nonterminal"),
+                    bypass(textBox("complexColPath", "nonterminal"))
+                ),
+                sequence(
+                    textBox("complexFunctionImportCall", "nonterminal"),
+                    bypass(textBox("complexPath", "nonterminal"))
+                ),
+                sequence(
+                    textBox("primitiveColFunctionImportCall", "nonterminal"),
+                    bypass(textBox("collectionPath", "nonterminal"))
+                ),
+                sequence(
+                    textBox("primitiveFunctionImportCall", "nonterminal"),
+                    bypass(textBox("primitivePath", "nonterminal"))
+                ),
+                sequence(
+                    textBox("functionImportCallNoParens", "nonterminal"),
+                    bypass(textBox("querySegment", "nonterminal"))
+                ),
+                sequence(
+                    textBox("crossjoin", "nonterminal"),
+                    bypass(textBox("querySegment", "nonterminal"))
+                ),
+                sequence(
+                    textBox("\"all\"", "terminal"),
+                    bypass(sequence(
+                        textBox("\"/\"", "terminal"),
+                        textBox("optionallyQualifiedEntityTypeName", "nonterminal")
+                    ))
+                )
+            )
+        </script>
+    </div>
+
     <script>
         // Automatically discover and render all diagram script tags when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             window.RailroadDiagrams.renderDiagramScripts();
         });
     </script>

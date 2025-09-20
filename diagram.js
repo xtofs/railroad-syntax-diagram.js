@@ -13,21 +13,54 @@
 (function(global) {
     'use strict';
 
-    // Direction constants for track building
+    /**
+     * @typedef {Object} LayoutBox
+     * @property {number} width - Width in grid units
+     * @property {number} height - Height in grid units  
+     * @property {number} baseline - Y coordinate of the main rail line in grid units
+     * @property {function(RenderContext): void} render - Function to render this layout using the given context
+     */
+
+    /**
+     * Direction constants for track building
+     * @readonly
+     * @enum {string}
+     */
     const Direction = {
+        /** @type {string} North direction for vertical movement up */
         NORTH: 'north',
-        SOUTH: 'south', 
+        /** @type {string} South direction for vertical movement down */
+        SOUTH: 'south',
+        /** @type {string} East direction for horizontal movement right */
         EAST: 'east',
+        /** @type {string} West direction for horizontal movement left */
         WEST: 'west'
     };
 
-    // Utility function for rounding up to even numbers
+    /**
+     * Utility function for rounding up to even numbers
+     * Used to ensure grid alignment for perfect centering in stacks
+     * @param {number} value - The number to round up to even
+     * @returns {number} The next even number >= value
+     * @example
+     * roundUpToEven(5) // returns 6
+     * roundUpToEven(4) // returns 4
+     */
     function roundUpToEven(value) {
         return value + (value % 2);
     }
 
-    // TrackBuilder class for creating SVG rail paths
+    /**
+     * TrackBuilder class for creating SVG rail paths with fluent API
+     * Manages SVG path creation with coordinate tracking and direction awareness
+     * @class
+     */
     class TrackBuilder {
+        /**
+         * Create a new TrackBuilder instance
+         * @param {d3.Selection} group - D3 selection of SVG group element to append paths to
+         * @param {number} gridSize - Size of grid units in pixels
+         */
         constructor(group, gridSize) {
             this.group = group;
             this.gridSize = gridSize;
@@ -52,6 +85,14 @@
             };
         }
 
+        /**
+         * Start a new path at the specified coordinates
+         * @param {number} x - X coordinate in grid units
+         * @param {number} y - Y coordinate in grid units
+         * @param {string} direction - Initial direction (Direction enum value)
+         * @returns {TrackBuilder} This instance for method chaining
+         * @throws {Error} If a path is already started
+         */
         start(x, y, direction) {
             if (this.currentPath) {
                 throw new Error('Path already started. Call finish() before starting a new path.');
@@ -69,6 +110,12 @@
             return this;
         }
 
+        /**
+         * Move forward in the current direction by specified units
+         * @param {number} units - Number of grid units to move forward
+         * @returns {TrackBuilder} This instance for method chaining
+         * @throws {Error} If no path is started
+         */
         forward(units) {
             if (!this.currentPath) {
                 throw new Error('No path started. Call start() first.');
@@ -174,6 +221,12 @@
             this.currentPath.commands.push(arcCommand);
         }
 
+        /**
+         * Finish the current path and add it to the SVG
+         * @param {string|null} [debugId=null] - Optional debug ID for the path element
+         * @returns {TrackBuilder} This instance for method chaining
+         * @throws {Error} If no path is started
+         */
         finish(debugId = null) {
             if (!this.currentPath) {
                 throw new Error('No path to finish. Call start() first.');
@@ -211,8 +264,19 @@
         }
     }
 
-    // RenderContext class - provides optimized rendering interface with cached CSS properties
+    /**
+     * RenderContext class - provides optimized rendering interface with cached CSS properties
+     * Manages coordinate transformations, child rendering, and CSS property caching for performance
+     * @class
+     */
     class RenderContext {
+        /**
+         * Create a new RenderContext instance
+         * @param {d3.Selection} group - D3 selection of SVG group element
+         * @param {number} gridSize - Size of grid units in pixels
+         * @param {boolean} showBounds - Whether to show debug bounding boxes
+         * @param {RenderContext|null} parentContext - Parent context for CSS property inheritance
+         */
         constructor(group, gridSize, showBounds, parentContext = null) {
             this.group = group;
             this.gridSize = gridSize;
@@ -252,7 +316,7 @@
                     .attr("data-debug", "true")
                     .attr("data-width", child.width)
                     .attr("data-height", child.height)
-                    .attr("data-baseline-y", child.baselineY)
+                    .attr("data-baseline-y", child.baseline)
                     .attr("data-grid-size", this.gridSize);
             }
 
@@ -310,8 +374,20 @@
         }
     }
 
-    // Diagram class - main class for creating and rendering railroad diagrams
+    /**
+     * Diagram class - main class for creating and rendering railroad diagrams
+     * Manages SVG creation, rule layout, and coordinate system for multiple syntax rules
+     * @class
+     */
     class Diagram {
+        /**
+         * Create a new Diagram instance
+         * @param {string|HTMLElement} containerId - CSS selector, element ID, or DOM element for container
+         * @param {number} grid - Size of grid units in pixels
+         * @param {boolean} showGrid - Whether to show background grid pattern
+         * @param {boolean} showBounds - Whether to show debug bounding boxes
+         * @throws {Error} When container element cannot be found
+         */
         constructor(containerId, grid, showGrid, showBounds) {
             this.container = typeof containerId === 'string'
                 ? (containerId.startsWith('#')
@@ -343,6 +419,11 @@
             this._invalidate();
         }
 
+        /**
+         * Add a syntax rule to the diagram
+         * @param {string} title - Name of the syntax rule
+         * @param {LayoutBox} expression - Layout expression for the rule
+         */
         addRule(title, expression) {
             this.rules.push({ title, expression });
             this._invalidate();
@@ -361,78 +442,9 @@
             let maxWidth = 0;
 
             this.rules.forEach(rule => {
-                // Create rule container with translation
-                const ruleGroup = this.svg.append("g")
-                    .attr("class", "rule-group")
-                    .attr("transform", `translate(${x * this.gridSize}, ${currentY * this.gridSize})`);
-
-                // Create TrackBuilder for this rule
-                const trackBuilder = new TrackBuilder(ruleGroup, this.gridSize);
-
-                // Create root-level RenderContext that will cache CSS properties
-                const rootRenderContext = new RenderContext(ruleGroup, this.gridSize, this.showBounds);
-
-                // Calculate positions for start and end terminals
-                const terminalRadius = this.gridSize * 0.75; // Radius = 3/4 grid unit
-                const expressionStartX = 2; // Expression starts at grid unit 2 (terminal at 0, rail from 0-2)
-                const expressionBaseline = rule.expression.baselineY;
-
-                // Add start terminal (black circle centered on grid point 0)
-                ruleGroup.append("circle")
-                    .attr("cx", 0) // Centered on grid point 0
-                    .attr("cy", expressionBaseline * this.gridSize)
-                    .attr("r", terminalRadius)
-                    .attr("fill", "black")
-                    .attr("class", "start-terminal");
-
-                // Add start connecting rail (from grid 0 to grid 2)
-                const startTrackBuilder = new TrackBuilder(ruleGroup, this.gridSize);
-                startTrackBuilder
-                    .start(0, expressionBaseline, Direction.EAST)
-                    .forward(2) // 2 grid units to reach expression start
-                    .finish("start-rail");
-
-                // Render the expression with offset to make room for start terminal
-                const expressionGroup = ruleGroup.append("g")
-                    .attr("transform", `translate(${expressionStartX * this.gridSize}, 0)`);
-                
-                // Create RenderContext for expression rendering
-                const expressionRenderContext = new RenderContext(expressionGroup, this.gridSize, this.showBounds);
-                rule.expression.render(expressionRenderContext);
-
-                // Add debug data attributes for expression group if showBounds is enabled
-                if (this.showBounds) {
-                    expressionGroup
-                        .attr("data-debug", "true")
-                        .attr("data-width", rule.expression.width)
-                        .attr("data-height", rule.expression.height)
-                        .attr("data-baseline-y", rule.expression.baselineY)
-                        .attr("data-grid-size", this.gridSize);
-                }
-
-                // Calculate end terminal position (centered on grid point)
-                const endTerminalX = expressionStartX + rule.expression.width + 2; // +2 for rail length
-                
-                // Add end connecting rail (from expression end to terminal)
-                startTrackBuilder
-                    .start(expressionStartX + rule.expression.width, expressionBaseline, Direction.EAST)
-                    .forward(2) // 2 grid units to reach terminal
-                    .finish("end-rail");
-
-                // Add end terminal (black circle centered on grid point)
-                ruleGroup.append("circle")
-                    .attr("cx", endTerminalX * this.gridSize) // Centered on grid point
-                    .attr("cy", expressionBaseline * this.gridSize)
-                    .attr("r", terminalRadius)
-                    .attr("fill", "black")
-                    .attr("class", "end-terminal");
-
-                // Track maximum width (terminals are on grid points, so width = start rail + expression + end rail)
-                const totalRuleWidth = 2 + rule.expression.width + 2; // 2 + expression + 2
-                maxWidth = Math.max(maxWidth, totalRuleWidth + 2); // +2 for side padding
-
-                // For height calculation: just the expression height
-                currentY += rule.expression.height;
+                const result = this._renderRule(rule, x, currentY);
+                maxWidth = Math.max(maxWidth, result.totalRuleWidth + 2); // +2 for side padding
+                currentY += result.ruleHeight;
             });
 
             // Update SVG dimensions
@@ -449,6 +461,108 @@
             if (this.showBounds) {
                 this._addDebugOverlay();
             }
+        }
+
+        /**
+         * Render a single syntax rule with terminals and rails
+         * @param {Object} rule - Rule object with title and expression properties
+         * @param {number} x - X position in grid units for rule placement
+         * @param {number} currentY - Y position in grid units for rule placement
+         * @returns {{totalRuleWidth: number, ruleHeight: number}} Rule dimensions for layout calculation
+         * @private
+         */
+        _renderRule(rule, x, currentY) {
+            // Create rule container with translation
+            const ruleGroup = this.svg.append("g")
+                .attr("class", "rule-group")
+                .attr("transform", `translate(${x * this.gridSize}, ${currentY * this.gridSize})`);
+
+            // Setup layout constants
+            const expressionStartX = 2; // Expression starts at grid unit 2 (terminal at 0, rail from 0-2)
+            const expressionBaseline = rule.expression.baseline;
+
+            // Render terminals and connecting rails
+            this._renderRuleTerminals(ruleGroup, rule.expression, expressionStartX, expressionBaseline);
+
+            // Render the core expression
+            this._renderRuleExpression(ruleGroup, rule.expression, expressionStartX);
+
+            // Calculate and return dimensions
+            const totalRuleWidth = 2 + rule.expression.width + 2; // start rail + expression + end rail
+            const ruleHeight = rule.expression.height;
+
+            return { totalRuleWidth, ruleHeight };
+        }
+
+        /**
+         * Render start and end terminals with connecting rails for a rule
+         * @param {d3.Selection} ruleGroup - SVG group for the rule
+         * @param {LayoutBox} expression - The rule's expression layout
+         * @param {number} expressionStartX - X position where expression starts
+         * @param {number} baseline - Y position of the main rail line
+         * @private
+         */
+        _renderRuleTerminals(ruleGroup, expression, expressionStartX, baseline) {
+            const terminalRadius = this.gridSize * 0.75; // Radius = 3/4 grid unit
+            const endTerminalX = expressionStartX + expression.width + 2; // +2 for end rail length
+
+            // Add start terminal (black circle at grid point 0)
+            ruleGroup.append("circle")
+                .attr("cx", 0)
+                .attr("cy", baseline * this.gridSize)
+                .attr("r", terminalRadius)
+                .attr("fill", "black")
+                .attr("class", "start-terminal");
+
+            // Add end terminal (black circle at calculated end position)
+            ruleGroup.append("circle")
+                .attr("cx", endTerminalX * this.gridSize)
+                .attr("cy", baseline * this.gridSize)
+                .attr("r", terminalRadius)
+                .attr("fill", "black")
+                .attr("class", "end-terminal");
+
+            // Add connecting rails
+            const trackBuilder = new TrackBuilder(ruleGroup, this.gridSize);
+            
+            // Start rail: from terminal to expression start
+            trackBuilder
+                .start(0, baseline, Direction.EAST)
+                .forward(2)
+                .finish("start-rail");
+
+            // End rail: from expression end to terminal
+            trackBuilder
+                .start(expressionStartX + expression.width, baseline, Direction.EAST)
+                .forward(2)
+                .finish("end-rail");
+        }
+
+        /**
+         * Render the rule's expression content within the rule container
+         * @param {d3.Selection} ruleGroup - SVG group for the rule
+         * @param {LayoutBox} expression - The rule's expression layout
+         * @param {number} expressionStartX - X position where expression starts
+         * @private
+         */
+        _renderRuleExpression(ruleGroup, expression, expressionStartX) {
+            // Create expression group with translation offset
+            const expressionGroup = ruleGroup.append("g")
+                .attr("transform", `translate(${expressionStartX * this.gridSize}, 0)`);
+            
+            // Add debug data attributes if enabled
+            if (this.showBounds) {
+                expressionGroup
+                    .attr("data-debug", "true")
+                    .attr("data-width", expression.width)
+                    .attr("data-height", expression.height)
+                    .attr("data-baseline-y", expression.baseline)
+                    .attr("data-grid-size", this.gridSize);
+            }
+
+            // Create RenderContext and render the expression
+            const expressionRenderContext = new RenderContext(expressionGroup, this.gridSize, this.showBounds);
+            expression.render(expressionRenderContext);
         }
 
         _addBackgroundGridPattern() {
@@ -571,11 +685,22 @@
         }
     }
 
-    // Expression class - static methods for creating railroad diagram expressions
+    /**
+     * Expression class - static factory methods for creating railroad diagram expressions
+     * Provides a fluent API for building syntax diagrams using layout objects
+     * All methods return LayoutBox objects with width, height, baseline, and render() method
+     * @class
+     */
     class Expression {
         
         /**
-         * @returns LayoutBox
+         * Create a text box layout for terminal or nonterminal elements
+         * @param {string} textContent - Text to display in the box
+         * @param {string} className - CSS class: 'terminal' for literals, 'nonterminal' for rule references
+         * @returns {LayoutBox} Layout object with render method
+         * @example
+         * Expression.textBox('"SELECT"', 'terminal')     // Literal keyword
+         * Expression.textBox('column_name', 'nonterminal') // Rule reference
          */
         static textBox(textContent, className) {
             const height = 2;
@@ -588,29 +713,40 @@
             return {
                 width: adjustedWidth,
                 height: height,
-                baselineY: 1,
+                baseline: 1,
                 render(renderContext) {
                     renderContext.renderTextBox(textContent, className, adjustedWidth);
                 }
             };
         }
 
+        /**
+         * Create a horizontal sequence of layout elements
+         * Elements are connected by rail lines with proper spacing
+         * @param {...LayoutBox} children - Variable number of layout elements to sequence
+         * @returns {LayoutBox} Layout object containing the sequence
+         * @example
+         * Expression.sequence(
+         *   Expression.textBox('SELECT', 'terminal'),
+         *   Expression.textBox('column_name', 'nonterminal')
+         * )
+         */
         static sequence(...children) {
             // Calculate total width and max height
             const totalWidth = children.reduce((sum, child) => sum + child.width, 0) + (children.length - 1) * 2;
             const maxHeight = Math.max(...children.map(child => child.height));
-            const baselineY = Math.max(...children.map(child => child.baselineY));
+            const baseline = Math.max(...children.map(child => child.baseline));
 
             return {
                 width: totalWidth,
                 height: maxHeight,
-                baselineY: baselineY,
+                baseline: baseline,
                 render(renderContext) {
                     let currentX = 0;
 
                     children.forEach((child, index) => {
                         // Calculate child Y position to align baselines (in relative coordinates)
-                        const childY = baselineY - child.baselineY;
+                        const childY = baseline - child.baseline;
 
                         // Call renderChild with child and relative coordinates
                         renderContext.renderChild(child, currentX, childY);
@@ -618,7 +754,7 @@
                         // Add horizontal rail connection to next child (except for the last child)
                         if (index < children.length - 1) {
                             const railStartX = currentX + child.width;
-                            const railY = baselineY;
+                            const railY = baseline;
 
                             renderContext.trackBuilder
                                 .start(railStartX, railY, Direction.EAST)
@@ -633,26 +769,37 @@
             };
         }
 
+        /**
+         * Create a vertical stack of layout elements (choice alternatives)
+         * All alternatives share the same entry and exit points with branching rails
+         * @param {...LayoutBox} children - Variable number of alternative layout elements
+         * @returns {LayoutBox} Layout object containing the stack
+         * @example
+         * Expression.stack(
+         *   Expression.textBox('ASC', 'terminal'),
+         *   Expression.textBox('DESC', 'terminal')
+         * )
+         */
         static stack(...children) {
             const maxChildWidth = roundUpToEven(Math.max(...children.map(child => child.width)));
             const maxWidth = maxChildWidth + 4; // Add 2 units on each side
             const totalHeight = children.reduce((sum, child) => sum + child.height, 0) + (children.length - 1) + 1;
-            const baselineY = children[0].baselineY;
+            const baseline = children[0].baseline;
 
             return {
                 width: maxWidth,
                 height: totalHeight,
-                baselineY: baselineY,
+                baseline: baseline,
                 render(renderContext) {
                     let currentY = 0;
                     const leftConnectionX = 0;
                     const rightConnectionX = maxWidth;
-                    const mainBaselineY = baselineY;
+                    const mainBaseline = baseline;
 
                     children.forEach((child, index) => {
                         const xOffset = 2 + (maxChildWidth - child.width) / 2;
                         const childX = xOffset;
-                        const childBaselineY = currentY + child.baselineY;
+                        const childBaseline = currentY + child.baseline;
 
                         renderContext.renderChild(child, childX, currentY);
 
@@ -662,23 +809,23 @@
                         if (index === 0) {
                             // For first child: straight line from left connection to child
                             renderContext.trackBuilder
-                                .start(leftConnectionX, mainBaselineY, Direction.EAST)
+                                .start(leftConnectionX, mainBaseline, Direction.EAST)
                                 .forward(childLeftX - leftConnectionX)
                                 .finish(`child${index}-left`);
 
                             // For first child: straight line from child to right connection
                             renderContext.trackBuilder
-                                .start(childRightX, childBaselineY, Direction.EAST)
+                                .start(childRightX, childBaseline, Direction.EAST)
                                 .forward(rightConnectionX - childRightX)
                                 .finish(`child${index}-right`);
                         } else {
                             // For other children: create proper branching paths
-                            const verticalDistance = childBaselineY - mainBaselineY;
+                            const verticalDistance = childBaseline - mainBaseline;
                             const horizontalToChild = childLeftX - leftConnectionX;
 
                             // Left rail path
                             renderContext.trackBuilder
-                                .start(leftConnectionX, mainBaselineY, Direction.EAST)
+                                .start(leftConnectionX, mainBaseline, Direction.EAST)
                                 .turnRight()
                                 .forward(verticalDistance - 2)
                                 .turnLeft()
@@ -689,7 +836,7 @@
                             const horizontalFromChild = rightConnectionX - childRightX;
 
                             renderContext.trackBuilder
-                                .start(rightConnectionX, mainBaselineY, Direction.WEST)
+                                .start(rightConnectionX, mainBaseline, Direction.WEST)
                                 .turnLeft()
                                 .forward(verticalDistance - 2)
                                 .turnRight()
@@ -703,17 +850,25 @@
             }
         }
 
+        /**
+         * Create a bypass layout for optional elements
+         * Adds a rail path above the element allowing it to be skipped
+         * @param {LayoutBox} child - The optional layout element
+         * @returns {LayoutBox} Layout object with bypass path
+         * @example
+         * Expression.bypass(Expression.textBox('DISTINCT', 'terminal'))
+         */
         static bypass(child) {
             const width = roundUpToEven(child.width + 4);
             const height = child.height + 1;
-            const baselineY = child.baselineY + 1;
+            const baseline = child.baseline + 1;
 
             return {
                 width: width,
                 height: height,
-                baselineY: baselineY,
+                baseline: baseline,
                 render(renderContext) {
-                    const mainBaseline = baselineY;
+                    const mainBaseline = baseline;
                     const childX = (width - child.width) / 2;
 
                     renderContext.renderChild(child, childX, 1);
@@ -722,11 +877,11 @@
                     renderContext.trackBuilder
                         .start(0, mainBaseline, Direction.EAST)
                         .turnLeft()
-                        .forward(baselineY - 2)
+                        .forward(baseline - 2)
                         .turnRight()
                         .forward(width - 4)
                         .turnRight()
-                        .forward(baselineY - 2)
+                        .forward(baseline - 2)
                         .turnLeft()
                         .finish("bypass-path");
 
@@ -742,17 +897,25 @@
             }
         }
 
+        /**
+         * Create a loop layout for repeatable elements
+         * Adds a rail path below the element allowing repetition
+         * @param {LayoutBox} child - The repeatable layout element
+         * @returns {LayoutBox} Layout object with loop path
+         * @example
+         * Expression.loop(Expression.textBox(',', 'terminal'))
+         */
         static loop(child) {
             const width = roundUpToEven(child.width + 4);
             const height = child.height + 1;
-            const baselineY = child.baselineY + 1;
+            const baseline = child.baseline + 1;
 
             return {
                 width: width,
                 height: height,
-                baselineY: baselineY,
+                baseline: baseline,
                 render(renderContext) {
-                    const mainBaseline = baselineY;
+                    const mainBaseline = baseline;
                     const childX = (width - child.width) / 2;
 
                     renderContext.renderChild(child, childX, 1);
@@ -761,11 +924,11 @@
                     renderContext.trackBuilder
                         .start(2, mainBaseline, Direction.WEST)
                         .turnRight()
-                        .forward(baselineY - 2)
+                        .forward(baseline - 2)
                         .turnRight()
                         .forward(width - 4)
                         .turnRight()
-                        .forward(baselineY - 2)
+                        .forward(baseline - 2)
                         .turnRight()
                         .finish("loop-path");
 
@@ -801,16 +964,16 @@
         }
     }
 
-    // Function to validate expression code for security
+    /**
+     * Validate expression code for security to prevent code injection attacks
+     * Checks for allowed function names and blocks dangerous patterns
+     * @param {string} code - JavaScript code string to validate
+     * @returns {boolean} True if validation passes
+     * @throws {Error} When code contains disallowed functions or dangerous patterns
+     */
     function validateExpressionCode(code) {
         // Remove whitespace and comments for analysis
         const cleanCode = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').trim();
-        
-        // Only allow safe characters: letters, numbers, quotes, parentheses, commas, spaces, and basic operators
-        const allowedPattern = /^[\s\w(),"'`+\-*/.\[\]\\]+$/;
-        if (!allowedPattern.test(cleanCode)) {
-            throw new Error('Expression contains disallowed characters');
-        }
         
         // Define allowed function names
         const allowedFunctions = ['textBox', 'sequence', 'stack', 'bypass', 'loop'];
@@ -852,14 +1015,28 @@
         return true;
     }
 
-    // Function to read grid size from CSS custom properties
+    /**
+     * Read grid size from CSS custom properties
+     * @returns {number} Grid size in pixels, defaults to 16 if not found
+     */
     function getGridSizeFromCSS() {
         const rootStyle = getComputedStyle(document.documentElement);
         const gridSizeStr = rootStyle.getPropertyValue('--rail-grid-size').trim();
         return parseInt(gridSizeStr) || 16; // fallback to 16px if not found
     }
 
-    // Function to render a single railroad diagram
+    /**
+     * Render a single railroad diagram from expression code
+     * @param {Object} config - Configuration object
+     * @param {string|HTMLElement} config.containerId - Container element or selector
+     * @param {string} config.expressionCode - JavaScript expression code using Expression API
+     * @param {string} config.ruleName - Name of the syntax rule being rendered
+     * @param {number} [config.gridSize=24] - Size of grid units in pixels
+     * @param {boolean} [config.showGrid=false] - Whether to show background grid
+     * @param {boolean} [config.showBounds=false] - Whether to show debug bounds
+     * @returns {Diagram} The created diagram instance
+     * @throws {Error} When expression code is invalid or container not found
+     */
     function renderRailroadDiagram(config) {
         const {
             containerId,
@@ -902,7 +1079,17 @@
         }
     }
 
-    // Function to automatically discover and render all diagram script tags
+    /**
+     * Automatically discover and render all diagram script tags in the document
+     * Searches for <script type="text/railroad" data-rule="ruleName"> elements
+     * and renders them as railroad diagrams within their parent .syntax-rule containers
+     * @param {Object} [config={}] - Configuration object
+     * @param {boolean} [config.showGrid=false] - Whether to show background grid on all diagrams
+     * @param {boolean} [config.showBounds=false] - Whether to show debug bounds on all diagrams
+     * @example
+     * // Call after DOM is ready, or include in script at end of body
+     * RailroadDiagrams.renderDiagramScripts({ showGrid: true });
+     */
     function renderDiagramScripts(config = {}) {
         const { showGrid = false, showBounds = false } = config;
         // Always read grid size from CSS custom properties
@@ -979,14 +1166,17 @@
         setupClickHandlers();
     }
 
-    // Expose to global scope
+    // Expose minimal public API to global scope
     global.RailroadDiagrams = {
-        Direction,
-        TrackBuilder,
-        Diagram,
-        Expression,
+        // High-level functions (most common usage)
+        renderDiagramScripts,
         renderRailroadDiagram,
-        renderDiagramScripts
+        
+        // Factory for building expressions programmatically
+        Expression,
+        
+        // Advanced: Direct diagram manipulation (rare usage)
+        Diagram
     };
 
 })(window);

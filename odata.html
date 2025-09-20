@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Diagram Demo</title>
+
+    <!-- D3.js dependency -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Railroad Diagram Library -->
+    <script src="diagram.js"></script>
+
+    <!-- Railroad Diagram stylesheet -->
+    <link rel="stylesheet" href="diagram.css">
+
+</head>
+
+<body>
+
+    <div class="syntax-rule" id="syntax-rule-odataUri">
+        <h2>odataUri</h2>
+        <p><code>odataUri := serviceRoot [ odataRelativeUri ]</code></p>
+        <script type="text/railroad" data-rule="odataUri">
+            sequence(
+                textBox("serviceRoot", "nonterminal"),
+                bypass(textBox("odataRelativeUri", "nonterminal"))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-serviceRoot">
+        <h2>serviceRoot</h2>
+        <p><code>serviceRoot := ( "https" / "http" ) "://" host [ ":" port ] "/" *( segment-nz "/" )</code></p>
+        <script type="text/railroad" data-rule="serviceRoot">
+            sequence(
+                stack(
+                    textBox("\"https\"", "terminal"),
+                    textBox("\"http\"", "terminal")
+                ),
+                textBox("\"://\"", "terminal"),
+                textBox("host", "nonterminal"),
+                bypass(sequence(
+                    textBox("\":\"", "terminal"),
+                    textBox("port", "nonterminal")
+                )),
+                textBox("\"/\"", "terminal"),
+                bypass(sequence(
+                    textBox("segment-nz", "nonterminal"),
+                    textBox("\"/\"", "terminal")
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-resourcePath">
+        <h2>resourcePath</h2>
+        <p><code>resourcePath := entitySetName [ collectionNavigation ] / singletonEntity [ singleNavigation ] / actionImportCall / ...</code>
+        </p>
+        <script type="text/railroad" data-rule="resourcePath">
+            stack(
+                sequence(
+                    textBox("entitySetName", "nonterminal"),
+                    bypass(textBox("collectionNavigation", "nonterminal"))
+                ),
+                sequence(
+                    textBox("singletonEntity", "nonterminal"),
+                    bypass(textBox("singleNavigation", "nonterminal"))
+                ),
+                textBox("actionImportCall", "nonterminal"),
+                sequence(
+                    textBox("entityColFunctionImportCall", "nonterminal"),
+                    bypass(textBox("collectionNavigation", "nonterminal"))
+                ),
+                sequence(
+                    textBox("entityFunctionImportCall", "nonterminal"),
+                    bypass(textBox("singleNavigation", "nonterminal"))
+                ),
+                sequence(
+                    textBox("complexColFunctionImportCall", "nonterminal"),
+                    bypass(textBox("complexColPath", "nonterminal"))
+                ),
+                sequence(
+                    textBox("complexFunctionImportCall", "nonterminal"),
+                    bypass(textBox("complexPath", "nonterminal"))
+                ),
+                sequence(
+                    textBox("primitiveColFunctionImportCall", "nonterminal"),
+                    bypass(textBox("collectionPath", "nonterminal"))
+                ),
+                sequence(
+                    textBox("primitiveFunctionImportCall", "nonterminal"),
+                    bypass(textBox("primitivePath", "nonterminal"))
+                ),
+                sequence(
+                    textBox("functionImportCallNoParens", "nonterminal"),
+                    bypass(textBox("querySegment", "nonterminal"))
+                ),
+                sequence(
+                    textBox("crossjoin", "nonterminal"),
+                    bypass(textBox("querySegment", "nonterminal"))
+                ),
+                sequence(
+                    textBox("\"$all\"", "terminal"),
+                    bypass(sequence(
+                        textBox("\"/\"", "terminal"),
+                        textBox("optionallyQualifiedEntityTypeName", "nonterminal")
+                    ))
+                )
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-keyPredicate">
+        <h2>keyPredicate</h2>
+        <p><code>keyPredicate := simpleKey / compoundKey / keyPathSegments</code></p>
+        <script type="text/railroad" data-rule="keyPredicate">
+            stack(
+                textBox("simpleKey", "nonterminal"),
+                textBox("compoundKey", "nonterminal"),
+                textBox("keyPathSegments", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-simpleKey">
+        <h2>simpleKey</h2>
+        <p><code>simpleKey := OPEN ( parameterAlias / keyPropertyValue ) CLOSE</code></p>
+        <script type="text/railroad" data-rule="simpleKey">
+            sequence(
+                textBox("OPEN", "nonterminal"),
+                stack(
+                    textBox("parameterAlias", "nonterminal"),
+                    textBox("keyPropertyValue", "nonterminal")
+                ),
+                textBox("CLOSE", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-compoundKey">
+        <h2>compoundKey</h2>
+        <p><code>compoundKey := OPEN keyValuePair *( COMMA keyValuePair ) CLOSE</code></p>
+        <script type="text/railroad" data-rule="compoundKey">
+            sequence(
+                textBox("OPEN", "nonterminal"),
+                textBox("keyValuePair", "nonterminal"),
+                bypass(sequence(
+                    textBox("COMMA", "nonterminal"),
+                    textBox("keyValuePair", "nonterminal")
+                )),
+                textBox("CLOSE", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-functionParameters">
+        <h2>functionParameters</h2>
+        <p><code>functionParameters := OPEN [ BWS functionParameter *( BWS COMMA BWS functionParameter ) ] BWS CLOSE</code>
+        </p>
+        <script type="text/railroad" data-rule="functionParameters">
+            sequence(
+                textBox("OPEN", "nonterminal"),
+                bypass(sequence(
+                    textBox("BWS", "nonterminal"),
+                    textBox("functionParameter", "nonterminal"),
+                    bypass(sequence(
+                        textBox("BWS", "nonterminal"),
+                        textBox("COMMA", "nonterminal"),
+                        textBox("BWS", "nonterminal"),
+                        textBox("functionParameter", "nonterminal")
+                    ))
+                )),
+                textBox("BWS", "nonterminal"),
+                textBox("CLOSE", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-queryOptions">
+        <h2>queryOptions</h2>
+        <p><code>queryOptions := queryOption *( "&" queryOption )</code></p>
+        <script type="text/railroad" data-rule="queryOptions">
+            sequence(
+                textBox("queryOption", "nonterminal"),
+                bypass(sequence(
+                    textBox("\"&\"", "terminal"),
+                    textBox("queryOption", "nonterminal")
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-systemQueryOption">
+        <h2>systemQueryOption</h2>
+        <p><code>systemQueryOption := compute / deltatoken / expand / filter / format / id / inlinecount / orderby / schemaversion / search / select / skip / skiptoken / top / index</code>
+        </p>
+        <script type="text/railroad" data-rule="systemQueryOption">
+            stack(
+                textBox("compute", "nonterminal"),
+                textBox("deltatoken", "nonterminal"),
+                textBox("expand", "nonterminal"),
+                textBox("filter", "nonterminal"),
+                textBox("format", "nonterminal"),
+                textBox("id", "nonterminal"),
+                textBox("inlinecount", "nonterminal"),
+                textBox("orderby", "nonterminal"),
+                textBox("schemaversion", "nonterminal"),
+                textBox("search", "nonterminal"),
+                textBox("select", "nonterminal"),
+                textBox("skip", "nonterminal"),
+                textBox("skiptoken", "nonterminal"),
+                textBox("top", "nonterminal"),
+                textBox("index", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-filter">
+        <h2>filter</h2>
+        <p><code>filter := ( "$filter" / "filter" ) EQ boolCommonExpr</code></p>
+        <script type="text/railroad" data-rule="filter">
+            sequence(
+                stack(
+                    textBox("\"$filter\"", "terminal"),
+                    textBox("\"filter\"", "terminal")
+                ),
+                textBox("EQ", "nonterminal"),
+                textBox("boolCommonExpr", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-select">
+        <h2>select</h2>
+        <p><code>select := ( "$select" / "select" ) EQ selectItem *( COMMA selectItem )</code></p>
+        <script type="text/railroad" data-rule="select">
+            sequence(
+                stack(
+                    textBox("\"$select\"", "terminal"),
+                    textBox("\"select\"", "terminal")
+                ),
+                textBox("EQ", "nonterminal"),
+                textBox("selectItem", "nonterminal"),
+                bypass(sequence(
+                    textBox("COMMA", "nonterminal"),
+                    textBox("selectItem", "nonterminal")
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-expand">
+        <h2>expand</h2>
+        <p><code>expand := ( "$expand" / "expand" ) EQ expandItem *( COMMA expandItem )</code></p>
+        <script type="text/railroad" data-rule="expand">
+            sequence(
+                stack(
+                    textBox("\"$expand\"", "terminal"),
+                    textBox("\"expand\"", "terminal")
+                ),
+                textBox("EQ", "nonterminal"),
+                textBox("expandItem", "nonterminal"),
+                bypass(sequence(
+                    textBox("COMMA", "nonterminal"),
+                    textBox("expandItem", "nonterminal")
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-orderby">
+        <h2>orderby</h2>
+        <p><code>orderby := ( "$orderby" / "orderby" ) EQ orderbyItem *( COMMA orderbyItem )</code></p>
+        <script type="text/railroad" data-rule="orderby">
+            sequence(
+                stack(
+                    textBox("\"$orderby\"", "terminal"),
+                    textBox("\"orderby\"", "terminal")
+                ),
+                textBox("EQ", "nonterminal"),
+                textBox("orderbyItem", "nonterminal"),
+                bypass(sequence(
+                    textBox("COMMA", "nonterminal"),
+                    textBox("orderbyItem", "nonterminal")
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-orderbyItem">
+        <h2>orderbyItem</h2>
+        <p><code>orderbyItem := commonExpr [ RWS ( "asc" / "desc" ) ]</code></p>
+        <script type="text/railroad" data-rule="orderbyItem">
+            sequence(
+                textBox("commonExpr", "nonterminal"),
+                bypass(sequence(
+                    textBox("RWS", "nonterminal"),
+                    stack(
+                        textBox("\"asc\"", "terminal"),
+                        textBox("\"desc\"", "terminal")
+                    )
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-skip">
+        <h2>skip</h2>
+        <p><code>skip := ( "$skip" / "skip" ) EQ 1*DIGIT</code></p>
+        <script type="text/railroad" data-rule="skip">
+            sequence(
+                stack(
+                    textBox("\"$skip\"", "terminal"),
+                    textBox("\"skip\"", "terminal")
+                ),
+                textBox("EQ", "nonterminal"),
+                sequence(textBox("DIGIT", "nonterminal"), loop(textBox("DIGIT", "nonterminal")))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-top">
+        <h2>top</h2>
+        <p><code>top := ( "$top" / "top" ) EQ 1*DIGIT</code></p>
+        <script type="text/railroad" data-rule="top">
+            sequence(
+                stack(
+                    textBox("\"$top\"", "terminal"),
+                    textBox("\"top\"", "terminal")
+                ),
+                textBox("EQ", "nonterminal"),
+                sequence(textBox("DIGIT", "nonterminal"), loop(textBox("DIGIT", "nonterminal")))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-commonExpr">
+        <h2>commonExpr</h2>
+        <p><code>commonExpr := ( primitiveLiteral / arrayOrObject / rootExpr / functionExpr / negateExpr / methodCallExpr / parenExpr / castExpr / isofExpr / notExpr / firstMemberExpr ) [ addExpr / subExpr / mulExpr / divExpr / divbyExpr / modExpr ] [ eqExpr / neExpr / ltExpr / leExpr / gtExpr / geExpr / hasExpr / inExpr ] [ andExpr / orExpr ]</code>
+        </p>
+        <script type="text/railroad" data-rule="commonExpr">
+            sequence(
+                stack(
+                    textBox("primitiveLiteral", "nonterminal"),
+                    textBox("arrayOrObject", "nonterminal"),
+                    textBox("rootExpr", "nonterminal"),
+                    textBox("functionExpr", "nonterminal"),
+                    textBox("negateExpr", "nonterminal"),
+                    textBox("methodCallExpr", "nonterminal"),
+                    textBox("parenExpr", "nonterminal"),
+                    textBox("castExpr", "nonterminal"),
+                    textBox("isofExpr", "nonterminal"),
+                    textBox("notExpr", "nonterminal"),
+                    textBox("firstMemberExpr", "nonterminal")
+                ),
+                bypass(stack(
+                    textBox("addExpr", "nonterminal"),
+                    textBox("subExpr", "nonterminal"),
+                    textBox("mulExpr", "nonterminal"),
+                    textBox("divExpr", "nonterminal"),
+                    textBox("divbyExpr", "nonterminal"),
+                    textBox("modExpr", "nonterminal")
+                )),
+                bypass(stack(
+                    textBox("eqExpr", "nonterminal"),
+                    textBox("neExpr", "nonterminal"),
+                    textBox("ltExpr", "nonterminal"),
+                    textBox("leExpr", "nonterminal"),
+                    textBox("gtExpr", "nonterminal"),
+                    textBox("geExpr", "nonterminal"),
+                    textBox("hasExpr", "nonterminal"),
+                    textBox("inExpr", "nonterminal")
+                )),
+                bypass(stack(
+                    textBox("andExpr", "nonterminal"),
+                    textBox("orExpr", "nonterminal")
+                ))
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-andExpr">
+        <h2>andExpr</h2>
+        <p><code>andExpr := RWS "and" RWS boolCommonExpr</code></p>
+        <script type="text/railroad" data-rule="andExpr">
+            sequence(
+                textBox("RWS", "nonterminal"),
+                textBox("\"and\"", "terminal"),
+                textBox("RWS", "nonterminal"),
+                textBox("boolCommonExpr", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-orExpr">
+        <h2>orExpr</h2>
+        <p><code>orExpr := RWS "or" RWS boolCommonExpr</code></p>
+        <script type="text/railroad" data-rule="orExpr">
+            sequence(
+                textBox("RWS", "nonterminal"),
+                textBox("\"or\"", "terminal"),
+                textBox("RWS", "nonterminal"),
+                textBox("boolCommonExpr", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-eqExpr">
+        <h2>eqExpr</h2>
+        <p><code>eqExpr := RWS "eq" RWS commonExpr</code></p>
+        <script type="text/railroad" data-rule="eqExpr">
+            sequence(
+                textBox("RWS", "nonterminal"),
+                textBox("\"eq\"", "terminal"),
+                textBox("RWS", "nonterminal"),
+                textBox("commonExpr", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-methodCallExpr">
+        <h2>methodCallExpr</h2>
+        <p><code>methodCallExpr := indexOfMethodCallExpr / toLowerMethodCallExpr / toUpperMethodCallExpr / trimMethodCallExpr / substringMethodCallExpr / concatMethodCallExpr / lengthMethodCallExpr / ...</code>
+        </p>
+        <script type="text/railroad" data-rule="methodCallExpr">
+            stack(
+                textBox("indexOfMethodCallExpr", "nonterminal"),
+                textBox("toLowerMethodCallExpr", "nonterminal"),
+                textBox("toUpperMethodCallExpr", "nonterminal"),
+                textBox("trimMethodCallExpr", "nonterminal"),
+                textBox("substringMethodCallExpr", "nonterminal"),
+                textBox("concatMethodCallExpr", "nonterminal"),
+                textBox("lengthMethodCallExpr", "nonterminal"),
+                textBox("startsWithMethodCallExpr", "nonterminal"),
+                textBox("endsWithMethodCallExpr", "nonterminal"),
+                textBox("containsMethodCallExpr", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-containsMethodCallExpr">
+        <h2>containsMethodCallExpr</h2>
+        <p><code>containsMethodCallExpr := "contains" OPEN BWS commonExpr BWS COMMA BWS commonExpr BWS CLOSE</code></p>
+        <script type="text/railroad" data-rule="containsMethodCallExpr">
+            sequence(
+                textBox("\"contains\"", "terminal"),
+                textBox("OPEN", "nonterminal"),
+                textBox("BWS", "nonterminal"),
+                textBox("commonExpr", "nonterminal"),
+                textBox("BWS", "nonterminal"),
+                textBox("COMMA", "nonterminal"),
+                textBox("BWS", "nonterminal"),
+                textBox("commonExpr", "nonterminal"),
+                textBox("BWS", "nonterminal"),
+                textBox("CLOSE", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-primitiveLiteral">
+        <h2>primitiveLiteral</h2>
+        <p><code>primitiveLiteral := null / boolean / guid / dateTimeOffsetLiteral / date / timeOfDayLiteral / decimalLiteral / ...</code>
+        </p>
+        <script type="text/railroad" data-rule="primitiveLiteral">
+            stack(
+                textBox("null", "nonterminal"),
+                textBox("boolean", "nonterminal"),
+                textBox("guid", "nonterminal"),
+                textBox("dateTimeOffsetLiteral", "nonterminal"),
+                textBox("date", "nonterminal"),
+                textBox("timeOfDayLiteral", "nonterminal"),
+                textBox("decimalLiteral", "nonterminal"),
+                textBox("stringLiteral", "nonterminal"),
+                textBox("enumLiteral", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-boolean">
+        <h2>boolean</h2>
+        <p><code>boolean := "true" / "false"</code></p>
+        <script type="text/railroad" data-rule="boolean">
+            stack(
+                textBox("\"true\"", "terminal"),
+                textBox("\"false\"", "terminal")
+            )
+        </script>
+    </div>
+
+    <div class="syntax-rule" id="syntax-rule-stringLiteral">
+        <h2>stringLiteral</h2>
+        <p><code>stringLiteral := SQUOTE *( SQUOTE-in-string / pchar-no-SQUOTE ) SQUOTE</code></p>
+        <script type="text/railroad" data-rule="stringLiteral">
+            sequence(
+                textBox("SQUOTE", "nonterminal"),
+                bypass(stack(
+                    textBox("SQUOTE-in-string", "nonterminal"),
+                    textBox("pchar-no-SQUOTE", "nonterminal")
+                )),
+                textBox("SQUOTE", "nonterminal")
+            )
+        </script>
+    </div>
+
+    <script>
+
+        window.RailroadDiagrams.renderDiagramScripts({ showGrid: false, showBounds: false });
+
+    </script>
+</body>
+
+</html>
